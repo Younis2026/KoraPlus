@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Sports Predict - تطبيق التوقعات الرياضية"
+version = "1.0.0"
+id = "artifacts/sports-predict"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19102
+
+[services.development]
+run = "pnpm --filter @workspace/sports-predict run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/sports-predict", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/sports-predict/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19102"
+BASE_PATH = "/"

@@ -1,12 +1,12 @@
-# [Project name]
+# Sports Predict - تطبيق التوقعات الرياضية
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A comprehensive Arabic-first sports match prediction web app. Users predict match scores, first goalscorer, man of the match, and total goals for football matches, earning points and competing on leaderboards.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
+- `pnpm --filter @workspace/sports-predict run dev` — run the frontend (port 19102)
 - `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string
@@ -14,32 +14,44 @@ _Replace the heading above with the project's name, and this line with one sente
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
+- Frontend: React + Vite, Tailwind CSS, Framer Motion, Cairo Arabic font, RTL
 - API: Express 5
-- DB: PostgreSQL + Drizzle ORM
+- DB: PostgreSQL + Drizzle ORM (users, predictions, user_favorites tables)
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
 - Build: esbuild (CJS bundle)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — source of truth for all API contracts
+- `lib/db/src/schema/` — DB tables: users, predictions, user_favorites
+- `artifacts/api-server/src/routes/` — route files per domain
+- `artifacts/api-server/src/lib/mockData.ts` — all Arabic mock data (matches, news, leagues, leaderboard)
+- `artifacts/sports-predict/src/pages/` — page components (home, matches, predictions, news, profile)
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- All mock sports data lives in `mockData.ts` — only predictions and user profile are persisted in DB
+- App defaults to dark mode via `class="dark"` on `<html>` and `dir="rtl" lang="ar"`
+- Cairo font is the single Arabic typeface — must be the very first @import in index.css
+- Match details for known matches (m1, m5) have full lineups/events; others get defaults
+- Single user model (userId=1) — no auth required for the demo
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Home: breaking news banner, live matches carousel, today's matches, user rank/points, top 3 leaderboard, top leagues
+- Matches: filter by today/live/tomorrow/past/by-league; match detail with lineups, stats, events timeline, fan poll
+- Predictions: available matches to predict, crowd % bars, points calculator, my predictions, history, leaderboard, rewards
+- News: category filter chips, article cards; full article view
+- Profile: avatar, stats, achievements grid, favorites manager, prediction history
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Arabic RTL throughout — all text must remain in Arabic
+- Dark mode is default and preferred
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- Always run codegen after changing `lib/api-spec/openapi.yaml`
+- Cairo font @import must be the very first line of `index.css` — PostCSS fails silently otherwise
+- team logos and avatars use colored SVG circle initials (no external image deps)

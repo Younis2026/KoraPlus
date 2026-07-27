@@ -1,0 +1,48 @@
+Build a comprehensive, modern Sports & Match Prediction Web Application styled for mobile and desktop screens, completely localized in Arabic (RTL support). 
+
+The app should feature a bottom navigation bar (or responsive header) with 5 main sections:
+
+1. Home (الرئيسية):
+   - Top breaking news banner.
+   - Today's matches carousel/section.
+   - Live matches indicator.
+   - Top leagues/tournaments quick links.
+   - User's upcoming predictions summary.
+   - Current user rank and points widget.
+   - Top 3 leaderboard highlight of the week.
+   - Latest news feed tailored to the user's favorite team.
+
+2. Matches (المباريات):
+   - Filters: Today's Matches, Live Matches, Tomorrow's Matches, Past Results, and By League.
+   - Match Detail View (when clicking a match):
+     * Starting Lineups.
+     * Missing/Injured Players.
+     * In-depth Match Statistics.
+     * Minute-by-minute Live Commentary / Match Events timeline.
+     * Goalscorers, Cards, and Substitutions tabs.
+     * Fans' prediction poll results.
+
+3. Predictions & Gamification (التوقعات - Core Feature):
+   - Available matches to predict on (Score prediction, First Goalscorer, Man of the Match, Total Goals count).
+   - Dynamic crowd prediction percentage and potential points calculator.
+   - Sub-tabs/Pages:
+     * My Predictions (توقعاتي).
+     * Prediction Results & History (نتائج التوقعات).
+     * Global & Friends Leaderboard (ترتيب المستخدمين).
+     * Weekly & Monthly Rewards/Prizes showcase (الجوائز الأسبوعية والشهرية).
+
+4. News & Media (الأخبار):
+   - Categories: Breaking News, Transfers, Player Injuries, Press Conferences, Articles & Analyses, Video Highlights & Goals.
+   - Filter news by favorite club/league.
+
+5. User Profile (حسابي):
+   - Profile picture, User Name, Total Points earned, Global Rank, and Badges/Achievements.
+   - Favorite Teams & Favorite Leagues manager.
+   - History of all past predictions and scores.
+   - App Settings & Technical Support/Feedback page.
+   - Logout option.
+
+Design Requirements:
+- Modern, clean UI (dark mode preferred for sports apps).
+- Fully responsive layout with smooth transitions.
+- Populate with realistic mock data in Arabic for matches, news, and leaderboards so the app feels completely alive out-of-the-box.
