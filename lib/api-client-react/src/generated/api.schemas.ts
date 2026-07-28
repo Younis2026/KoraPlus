@@ -439,6 +439,300 @@ export interface ProfileStats {
   weeklyRank: number;
 }
 
+export type AdminMatchStatus = typeof AdminMatchStatus[keyof typeof AdminMatchStatus];
+
+
+export const AdminMatchStatus = {
+  upcoming: 'upcoming',
+  live: 'live',
+  finished: 'finished',
+  postponed: 'postponed',
+} as const;
+
+export type AdminMatchEventType = typeof AdminMatchEventType[keyof typeof AdminMatchEventType];
+
+
+export const AdminMatchEventType = {
+  goal: 'goal',
+  yellow_card: 'yellow_card',
+  red_card: 'red_card',
+  substitution: 'substitution',
+  var: 'var',
+  penalty: 'penalty',
+} as const;
+
+export type AdminMatchEventTeam = typeof AdminMatchEventTeam[keyof typeof AdminMatchEventTeam];
+
+
+export const AdminMatchEventTeam = {
+  home: 'home',
+  away: 'away',
+} as const;
+
+export interface AdminMatchEvent {
+  id: string;
+  matchId: string;
+  minute: number;
+  type: AdminMatchEventType;
+  team: AdminMatchEventTeam;
+  playerName: string;
+  /** @nullable */
+  assistPlayerName?: string | null;
+  description: string;
+  createdAt: string;
+}
+
+export interface AdminMatch {
+  id: string;
+  homeTeamName: string;
+  awayTeamName: string;
+  leagueName: string;
+  scheduledAt: string;
+  status: AdminMatchStatus;
+  /** @nullable */
+  homeScore?: number | null;
+  /** @nullable */
+  awayScore?: number | null;
+  /** @nullable */
+  minute?: number | null;
+  venue: string;
+  predictionOpen: boolean;
+  /** @nullable */
+  settledAt?: string | null;
+  createdAt: string;
+  events: AdminMatchEvent[];
+}
+
+export type AdminMatchInputStatus = typeof AdminMatchInputStatus[keyof typeof AdminMatchInputStatus];
+
+
+export const AdminMatchInputStatus = {
+  upcoming: 'upcoming',
+  live: 'live',
+  finished: 'finished',
+  postponed: 'postponed',
+} as const;
+
+export interface AdminMatchInput {
+  homeTeamName: string;
+  awayTeamName: string;
+  leagueName: string;
+  scheduledAt: string;
+  status: AdminMatchInputStatus;
+  venue: string;
+  predictionOpen?: boolean;
+}
+
+export type AdminMatchUpdateStatus = typeof AdminMatchUpdateStatus[keyof typeof AdminMatchUpdateStatus];
+
+
+export const AdminMatchUpdateStatus = {
+  upcoming: 'upcoming',
+  live: 'live',
+  finished: 'finished',
+  postponed: 'postponed',
+} as const;
+
+export interface AdminMatchUpdate {
+  status?: AdminMatchUpdateStatus;
+  /** @nullable */
+  homeScore?: number | null;
+  /** @nullable */
+  awayScore?: number | null;
+  /** @nullable */
+  minute?: number | null;
+  predictionOpen?: boolean;
+}
+
+export type AdminEventInputType = typeof AdminEventInputType[keyof typeof AdminEventInputType];
+
+
+export const AdminEventInputType = {
+  goal: 'goal',
+  yellow_card: 'yellow_card',
+  red_card: 'red_card',
+  substitution: 'substitution',
+  var: 'var',
+  penalty: 'penalty',
+} as const;
+
+export type AdminEventInputTeam = typeof AdminEventInputTeam[keyof typeof AdminEventInputTeam];
+
+
+export const AdminEventInputTeam = {
+  home: 'home',
+  away: 'away',
+} as const;
+
+export interface AdminEventInput {
+  minute: number;
+  type: AdminEventInputType;
+  team: AdminEventInputTeam;
+  playerName: string;
+  /** @nullable */
+  assistPlayerName?: string | null;
+  description: string;
+}
+
+export interface AdminSettleResult {
+  matchId: string;
+  settledCount: number;
+  pointsAwarded: number;
+  message: string;
+}
+
+export type AdminArticleCategory = typeof AdminArticleCategory[keyof typeof AdminArticleCategory];
+
+
+export const AdminArticleCategory = {
+  breaking: 'breaking',
+  transfers: 'transfers',
+  injuries: 'injuries',
+  press_conference: 'press_conference',
+  analysis: 'analysis',
+  video_highlights: 'video_highlights',
+} as const;
+
+export interface AdminArticle {
+  id: string;
+  title: string;
+  summary: string;
+  content: string;
+  category: AdminArticleCategory;
+  imageUrl: string;
+  /** @nullable */
+  teamId?: string | null;
+  /** @nullable */
+  leagueId?: string | null;
+  isBreaking: boolean;
+  readTimeMinutes: number;
+  publishedAt: string;
+  tags: string[];
+}
+
+export type AdminArticleInputCategory = typeof AdminArticleInputCategory[keyof typeof AdminArticleInputCategory];
+
+
+export const AdminArticleInputCategory = {
+  breaking: 'breaking',
+  transfers: 'transfers',
+  injuries: 'injuries',
+  press_conference: 'press_conference',
+  analysis: 'analysis',
+  video_highlights: 'video_highlights',
+} as const;
+
+export interface AdminArticleInput {
+  title: string;
+  summary: string;
+  content: string;
+  category: AdminArticleInputCategory;
+  imageUrl: string;
+  /** @nullable */
+  teamId?: string | null;
+  /** @nullable */
+  leagueId?: string | null;
+  isBreaking: boolean;
+  readTimeMinutes: number;
+  tags?: string[];
+}
+
+export type AdminArticleUpdateCategory = typeof AdminArticleUpdateCategory[keyof typeof AdminArticleUpdateCategory];
+
+
+export const AdminArticleUpdateCategory = {
+  breaking: 'breaking',
+  transfers: 'transfers',
+  injuries: 'injuries',
+  press_conference: 'press_conference',
+  analysis: 'analysis',
+  video_highlights: 'video_highlights',
+} as const;
+
+export interface AdminArticleUpdate {
+  title?: string;
+  summary?: string;
+  content?: string;
+  category?: AdminArticleUpdateCategory;
+  imageUrl?: string;
+  /** @nullable */
+  teamId?: string | null;
+  /** @nullable */
+  leagueId?: string | null;
+  isBreaking?: boolean;
+  readTimeMinutes?: number;
+  tags?: string[];
+}
+
+export interface AdminPredictionConfig {
+  matchId: string;
+  matchName: string;
+  isOpen: boolean;
+  scorePoints: number;
+  goalscorерPoints: number;
+  momPoints: number;
+  totalGoalsPoints: number;
+  updatedAt: string;
+}
+
+export interface AdminPredictionConfigUpdate {
+  isOpen?: boolean;
+  scorePoints?: number;
+  goalscorерPoints?: number;
+  momPoints?: number;
+  totalGoalsPoints?: number;
+}
+
+export interface AdminUser {
+  id: string;
+  name: string;
+  username: string;
+  country: string;
+  totalPoints: number;
+  globalRank: number;
+  totalPredictions: number;
+  accuracy: number;
+  level: string;
+  pointAdjustment: number;
+  joinedAt: string;
+}
+
+export interface AdminPointAdjustmentInput {
+  adjustment: number;
+  reason: string;
+}
+
+export type AdminLeaderboardResetInputType = typeof AdminLeaderboardResetInputType[keyof typeof AdminLeaderboardResetInputType];
+
+
+export const AdminLeaderboardResetInputType = {
+  weekly: 'weekly',
+  monthly: 'monthly',
+} as const;
+
+export interface AdminLeaderboardResetInput {
+  type: AdminLeaderboardResetInputType;
+}
+
+export interface AdminLeaderboardResetResult {
+  type: string;
+  resetAt: string;
+  message: string;
+}
+
+export interface AdminStats {
+  totalMatches: number;
+  liveMatches: number;
+  upcomingMatches: number;
+  finishedMatches: number;
+  totalArticles: number;
+  breakingNewsCount: number;
+  totalPredictions: number;
+  pendingSettlements: number;
+  totalUsers: number;
+  activeThisWeek: number;
+}
+
 export type ListMatchesParams = {
 filter?: ListMatchesFilter;
 /**

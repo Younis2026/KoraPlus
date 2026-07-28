@@ -17,7 +17,6 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
- * Returns breaking news, today's matches, live count, user rank, top leaderboard, and upcoming predictions
  * @summary Get home page aggregated summary
  */
 export const GetHomeSummaryResponse = zod.object({
@@ -779,6 +778,395 @@ export const GetProfileStatsResponse = zod.object({
   "bestStreak": zod.number(),
   "globalRank": zod.number(),
   "weeklyRank": zod.number()
+})
+
+
+/**
+ * @summary List all matches for admin management
+ */
+export const ListAdminMatchesResponseItem = zod.object({
+  "id": zod.string(),
+  "homeTeamName": zod.string(),
+  "awayTeamName": zod.string(),
+  "leagueName": zod.string(),
+  "scheduledAt": zod.coerce.date(),
+  "status": zod.enum(['upcoming', 'live', 'finished', 'postponed']),
+  "homeScore": zod.number().nullish(),
+  "awayScore": zod.number().nullish(),
+  "minute": zod.number().nullish(),
+  "venue": zod.string(),
+  "predictionOpen": zod.boolean(),
+  "settledAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "events": zod.array(zod.object({
+  "id": zod.string(),
+  "matchId": zod.string(),
+  "minute": zod.number(),
+  "type": zod.enum(['goal', 'yellow_card', 'red_card', 'substitution', 'var', 'penalty']),
+  "team": zod.enum(['home', 'away']),
+  "playerName": zod.string(),
+  "assistPlayerName": zod.string().nullish(),
+  "description": zod.string(),
+  "createdAt": zod.coerce.date()
+}))
+})
+export const ListAdminMatchesResponse = zod.array(ListAdminMatchesResponseItem)
+
+
+/**
+ * @summary Create a new match
+ */
+export const CreateAdminMatchBody = zod.object({
+  "homeTeamName": zod.string(),
+  "awayTeamName": zod.string(),
+  "leagueName": zod.string(),
+  "scheduledAt": zod.coerce.date(),
+  "status": zod.enum(['upcoming', 'live', 'finished', 'postponed']),
+  "venue": zod.string(),
+  "predictionOpen": zod.boolean().optional()
+})
+
+export const CreateAdminMatchResponse = zod.object({
+  "id": zod.string(),
+  "homeTeamName": zod.string(),
+  "awayTeamName": zod.string(),
+  "leagueName": zod.string(),
+  "scheduledAt": zod.coerce.date(),
+  "status": zod.enum(['upcoming', 'live', 'finished', 'postponed']),
+  "homeScore": zod.number().nullish(),
+  "awayScore": zod.number().nullish(),
+  "minute": zod.number().nullish(),
+  "venue": zod.string(),
+  "predictionOpen": zod.boolean(),
+  "settledAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "events": zod.array(zod.object({
+  "id": zod.string(),
+  "matchId": zod.string(),
+  "minute": zod.number(),
+  "type": zod.enum(['goal', 'yellow_card', 'red_card', 'substitution', 'var', 'penalty']),
+  "team": zod.enum(['home', 'away']),
+  "playerName": zod.string(),
+  "assistPlayerName": zod.string().nullish(),
+  "description": zod.string(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Update match score, status, or minute
+ */
+export const UpdateAdminMatchParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateAdminMatchBody = zod.object({
+  "status": zod.enum(['upcoming', 'live', 'finished', 'postponed']).optional(),
+  "homeScore": zod.number().nullish(),
+  "awayScore": zod.number().nullish(),
+  "minute": zod.number().nullish(),
+  "predictionOpen": zod.boolean().optional()
+})
+
+export const UpdateAdminMatchResponse = zod.object({
+  "id": zod.string(),
+  "homeTeamName": zod.string(),
+  "awayTeamName": zod.string(),
+  "leagueName": zod.string(),
+  "scheduledAt": zod.coerce.date(),
+  "status": zod.enum(['upcoming', 'live', 'finished', 'postponed']),
+  "homeScore": zod.number().nullish(),
+  "awayScore": zod.number().nullish(),
+  "minute": zod.number().nullish(),
+  "venue": zod.string(),
+  "predictionOpen": zod.boolean(),
+  "settledAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "events": zod.array(zod.object({
+  "id": zod.string(),
+  "matchId": zod.string(),
+  "minute": zod.number(),
+  "type": zod.enum(['goal', 'yellow_card', 'red_card', 'substitution', 'var', 'penalty']),
+  "team": zod.enum(['home', 'away']),
+  "playerName": zod.string(),
+  "assistPlayerName": zod.string().nullish(),
+  "description": zod.string(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Add a live match event (goal, card, substitution)
+ */
+export const AddMatchEventParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AddMatchEventBody = zod.object({
+  "minute": zod.number(),
+  "type": zod.enum(['goal', 'yellow_card', 'red_card', 'substitution', 'var', 'penalty']),
+  "team": zod.enum(['home', 'away']),
+  "playerName": zod.string(),
+  "assistPlayerName": zod.string().nullish(),
+  "description": zod.string()
+})
+
+export const AddMatchEventResponse = zod.object({
+  "id": zod.string(),
+  "matchId": zod.string(),
+  "minute": zod.number(),
+  "type": zod.enum(['goal', 'yellow_card', 'red_card', 'substitution', 'var', 'penalty']),
+  "team": zod.enum(['home', 'away']),
+  "playerName": zod.string(),
+  "assistPlayerName": zod.string().nullish(),
+  "description": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Remove a match event
+ */
+export const DeleteMatchEventParams = zod.object({
+  "id": zod.coerce.string(),
+  "eventId": zod.coerce.string()
+})
+
+export const DeleteMatchEventResponse = zod.void()
+
+
+/**
+ * @summary Settle all predictions for a finished match and award points
+ */
+export const SettleMatchPredictionsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const SettleMatchPredictionsResponse = zod.object({
+  "matchId": zod.string(),
+  "settledCount": zod.number(),
+  "pointsAwarded": zod.number(),
+  "message": zod.string()
+})
+
+
+/**
+ * @summary List all news articles for admin management
+ */
+export const ListAdminArticlesResponseItem = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "content": zod.string(),
+  "category": zod.enum(['breaking', 'transfers', 'injuries', 'press_conference', 'analysis', 'video_highlights']),
+  "imageUrl": zod.string(),
+  "teamId": zod.string().nullish(),
+  "leagueId": zod.string().nullish(),
+  "isBreaking": zod.boolean(),
+  "readTimeMinutes": zod.number(),
+  "publishedAt": zod.coerce.date(),
+  "tags": zod.array(zod.string())
+})
+export const ListAdminArticlesResponse = zod.array(ListAdminArticlesResponseItem)
+
+
+/**
+ * @summary Publish a new news article
+ */
+export const CreateAdminArticleBody = zod.object({
+  "title": zod.string(),
+  "summary": zod.string(),
+  "content": zod.string(),
+  "category": zod.enum(['breaking', 'transfers', 'injuries', 'press_conference', 'analysis', 'video_highlights']),
+  "imageUrl": zod.string(),
+  "teamId": zod.string().nullish(),
+  "leagueId": zod.string().nullish(),
+  "isBreaking": zod.boolean(),
+  "readTimeMinutes": zod.number(),
+  "tags": zod.array(zod.string()).optional()
+})
+
+export const CreateAdminArticleResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "content": zod.string(),
+  "category": zod.enum(['breaking', 'transfers', 'injuries', 'press_conference', 'analysis', 'video_highlights']),
+  "imageUrl": zod.string(),
+  "teamId": zod.string().nullish(),
+  "leagueId": zod.string().nullish(),
+  "isBreaking": zod.boolean(),
+  "readTimeMinutes": zod.number(),
+  "publishedAt": zod.coerce.date(),
+  "tags": zod.array(zod.string())
+})
+
+
+/**
+ * @summary Update a news article
+ */
+export const UpdateAdminArticleParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateAdminArticleBody = zod.object({
+  "title": zod.string().optional(),
+  "summary": zod.string().optional(),
+  "content": zod.string().optional(),
+  "category": zod.enum(['breaking', 'transfers', 'injuries', 'press_conference', 'analysis', 'video_highlights']).optional(),
+  "imageUrl": zod.string().optional(),
+  "teamId": zod.string().nullish(),
+  "leagueId": zod.string().nullish(),
+  "isBreaking": zod.boolean().optional(),
+  "readTimeMinutes": zod.number().optional(),
+  "tags": zod.array(zod.string()).optional()
+})
+
+export const UpdateAdminArticleResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "content": zod.string(),
+  "category": zod.enum(['breaking', 'transfers', 'injuries', 'press_conference', 'analysis', 'video_highlights']),
+  "imageUrl": zod.string(),
+  "teamId": zod.string().nullish(),
+  "leagueId": zod.string().nullish(),
+  "isBreaking": zod.boolean(),
+  "readTimeMinutes": zod.number(),
+  "publishedAt": zod.coerce.date(),
+  "tags": zod.array(zod.string())
+})
+
+
+/**
+ * @summary Delete a news article
+ */
+export const DeleteAdminArticleParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DeleteAdminArticleResponse = zod.void()
+
+
+/**
+ * @summary List prediction settings for all matches
+ */
+export const ListPredictionConfigsResponseItem = zod.object({
+  "matchId": zod.string(),
+  "matchName": zod.string(),
+  "isOpen": zod.boolean(),
+  "scorePoints": zod.number(),
+  "goalscorерPoints": zod.number(),
+  "momPoints": zod.number(),
+  "totalGoalsPoints": zod.number(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListPredictionConfigsResponse = zod.array(ListPredictionConfigsResponseItem)
+
+
+/**
+ * @summary Update prediction settings for a match
+ */
+export const UpdatePredictionConfigParams = zod.object({
+  "matchId": zod.coerce.string()
+})
+
+export const UpdatePredictionConfigBody = zod.object({
+  "isOpen": zod.boolean().optional(),
+  "scorePoints": zod.number().optional(),
+  "goalscorерPoints": zod.number().optional(),
+  "momPoints": zod.number().optional(),
+  "totalGoalsPoints": zod.number().optional()
+})
+
+export const UpdatePredictionConfigResponse = zod.object({
+  "matchId": zod.string(),
+  "matchName": zod.string(),
+  "isOpen": zod.boolean(),
+  "scorePoints": zod.number(),
+  "goalscorерPoints": zod.number(),
+  "momPoints": zod.number(),
+  "totalGoalsPoints": zod.number(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List all users for admin management
+ */
+export const ListAdminUsersResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "username": zod.string(),
+  "country": zod.string(),
+  "totalPoints": zod.number(),
+  "globalRank": zod.number(),
+  "totalPredictions": zod.number(),
+  "accuracy": zod.number(),
+  "level": zod.string(),
+  "pointAdjustment": zod.number(),
+  "joinedAt": zod.coerce.date()
+})
+export const ListAdminUsersResponse = zod.array(ListAdminUsersResponseItem)
+
+
+/**
+ * @summary Manually adjust a user's points
+ */
+export const AdjustUserPointsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AdjustUserPointsBody = zod.object({
+  "adjustment": zod.number(),
+  "reason": zod.string()
+})
+
+export const AdjustUserPointsResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "username": zod.string(),
+  "country": zod.string(),
+  "totalPoints": zod.number(),
+  "globalRank": zod.number(),
+  "totalPredictions": zod.number(),
+  "accuracy": zod.number(),
+  "level": zod.string(),
+  "pointAdjustment": zod.number(),
+  "joinedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Reset weekly or monthly leaderboard
+ */
+export const ResetLeaderboardBody = zod.object({
+  "type": zod.enum(['weekly', 'monthly'])
+})
+
+export const ResetLeaderboardResponse = zod.object({
+  "type": zod.string(),
+  "resetAt": zod.coerce.date(),
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Get admin dashboard overview stats
+ */
+export const GetAdminStatsResponse = zod.object({
+  "totalMatches": zod.number(),
+  "liveMatches": zod.number(),
+  "upcomingMatches": zod.number(),
+  "finishedMatches": zod.number(),
+  "totalArticles": zod.number(),
+  "breakingNewsCount": zod.number(),
+  "totalPredictions": zod.number(),
+  "pendingSettlements": zod.number(),
+  "totalUsers": zod.number(),
+  "activeThisWeek": zod.number()
 })
 
 

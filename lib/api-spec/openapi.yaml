@@ -9,21 +9,14 @@ servers:
     description: Base API path
 tags:
   - name: health
-    description: Health operations
   - name: home
-    description: Home page aggregated data
   - name: matches
-    description: Match listings and details
   - name: predictions
-    description: Predictions and gamification
   - name: leaderboard
-    description: Leaderboard rankings
   - name: news
-    description: News and media
   - name: profile
-    description: User profile and settings
   - name: leagues
-    description: Leagues and tournaments
+  - name: admin
 
 paths:
   /healthz:
@@ -44,7 +37,6 @@ paths:
       operationId: getHomeSummary
       tags: [home]
       summary: Get home page aggregated summary
-      description: Returns breaking news, today's matches, live count, user rank, top leaderboard, and upcoming predictions
       responses:
         "200":
           description: Home summary data
@@ -431,6 +423,325 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProfileStats"
 
+  # ─── Admin endpoints ─────────────────────────────────────────────────────────
+
+  /admin/matches:
+    get:
+      operationId: listAdminMatches
+      tags: [admin]
+      summary: List all matches for admin management
+      responses:
+        "200":
+          description: All matches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminMatch"
+    post:
+      operationId: createAdminMatch
+      tags: [admin]
+      summary: Create a new match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminMatchInput"
+      responses:
+        "201":
+          description: Match created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMatch"
+        "400":
+          description: Invalid input
+
+  /admin/matches/{id}:
+    patch:
+      operationId: updateAdminMatch
+      tags: [admin]
+      summary: Update match score, status, or minute
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminMatchUpdate"
+      responses:
+        "200":
+          description: Match updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMatch"
+        "404":
+          description: Not found
+
+  /admin/matches/{id}/events:
+    post:
+      operationId: addMatchEvent
+      tags: [admin]
+      summary: Add a live match event (goal, card, substitution)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminEventInput"
+      responses:
+        "201":
+          description: Event added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMatchEvent"
+        "404":
+          description: Not found
+
+  /admin/matches/{id}/events/{eventId}:
+    delete:
+      operationId: deleteMatchEvent
+      tags: [admin]
+      summary: Remove a match event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /admin/matches/{id}/settle:
+    post:
+      operationId: settleMatchPredictions
+      tags: [admin]
+      summary: Settle all predictions for a finished match and award points
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Predictions settled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettleResult"
+        "404":
+          description: Not found
+
+  /admin/articles:
+    get:
+      operationId: listAdminArticles
+      tags: [admin]
+      summary: List all news articles for admin management
+      responses:
+        "200":
+          description: All articles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminArticle"
+    post:
+      operationId: createAdminArticle
+      tags: [admin]
+      summary: Publish a new news article
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminArticleInput"
+      responses:
+        "201":
+          description: Article published
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminArticle"
+        "400":
+          description: Invalid input
+
+  /admin/articles/{id}:
+    patch:
+      operationId: updateAdminArticle
+      tags: [admin]
+      summary: Update a news article
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminArticleUpdate"
+      responses:
+        "200":
+          description: Article updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminArticle"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteAdminArticle
+      tags: [admin]
+      summary: Delete a news article
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /admin/predictions/configs:
+    get:
+      operationId: listPredictionConfigs
+      tags: [admin]
+      summary: List prediction settings for all matches
+      responses:
+        "200":
+          description: Prediction configs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminPredictionConfig"
+
+  /admin/predictions/configs/{matchId}:
+    patch:
+      operationId: updatePredictionConfig
+      tags: [admin]
+      summary: Update prediction settings for a match
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminPredictionConfigUpdate"
+      responses:
+        "200":
+          description: Config updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminPredictionConfig"
+
+  /admin/users:
+    get:
+      operationId: listAdminUsers
+      tags: [admin]
+      summary: List all users for admin management
+      responses:
+        "200":
+          description: Users list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminUser"
+
+  /admin/users/{id}/points:
+    patch:
+      operationId: adjustUserPoints
+      tags: [admin]
+      summary: Manually adjust a user's points
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminPointAdjustmentInput"
+      responses:
+        "200":
+          description: Points adjusted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+        "404":
+          description: Not found
+
+  /admin/leaderboard/reset:
+    post:
+      operationId: resetLeaderboard
+      tags: [admin]
+      summary: Reset weekly or monthly leaderboard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLeaderboardResetInput"
+      responses:
+        "200":
+          description: Leaderboard reset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLeaderboardResetResult"
+
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Get admin dashboard overview stats
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
 components:
   schemas:
     HealthStatus:
@@ -438,8 +749,7 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
     Team:
       type: object
@@ -1031,3 +1341,344 @@ components:
         weeklyRank:
           type: integer
       required: [totalPoints, weeklyPoints, monthlyPoints, totalPredictions, wonPredictions, accuracy, currentStreak, bestStreak, globalRank, weeklyRank]
+
+    # ─── Admin schemas ────────────────────────────────────────────────────────
+
+    AdminMatch:
+      type: object
+      properties:
+        id:
+          type: string
+        homeTeamName:
+          type: string
+        awayTeamName:
+          type: string
+        leagueName:
+          type: string
+        scheduledAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [upcoming, live, finished, postponed]
+        homeScore:
+          type: ["integer", "null"]
+        awayScore:
+          type: ["integer", "null"]
+        minute:
+          type: ["integer", "null"]
+        venue:
+          type: string
+        predictionOpen:
+          type: boolean
+        settledAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminMatchEvent"
+      required: [id, homeTeamName, awayTeamName, leagueName, scheduledAt, status, venue, predictionOpen, createdAt, events]
+
+    AdminMatchInput:
+      type: object
+      properties:
+        homeTeamName:
+          type: string
+        awayTeamName:
+          type: string
+        leagueName:
+          type: string
+        scheduledAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [upcoming, live, finished, postponed]
+        venue:
+          type: string
+        predictionOpen:
+          type: boolean
+      required: [homeTeamName, awayTeamName, leagueName, scheduledAt, status, venue]
+
+    AdminMatchUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [upcoming, live, finished, postponed]
+        homeScore:
+          type: ["integer", "null"]
+        awayScore:
+          type: ["integer", "null"]
+        minute:
+          type: ["integer", "null"]
+        predictionOpen:
+          type: boolean
+
+    AdminMatchEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        matchId:
+          type: string
+        minute:
+          type: integer
+        type:
+          type: string
+          enum: [goal, yellow_card, red_card, substitution, var, penalty]
+        team:
+          type: string
+          enum: [home, away]
+        playerName:
+          type: string
+        assistPlayerName:
+          type: ["string", "null"]
+        description:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, matchId, minute, type, team, playerName, description, createdAt]
+
+    AdminEventInput:
+      type: object
+      properties:
+        minute:
+          type: integer
+        type:
+          type: string
+          enum: [goal, yellow_card, red_card, substitution, var, penalty]
+        team:
+          type: string
+          enum: [home, away]
+        playerName:
+          type: string
+        assistPlayerName:
+          type: ["string", "null"]
+        description:
+          type: string
+      required: [minute, type, team, playerName, description]
+
+    AdminSettleResult:
+      type: object
+      properties:
+        matchId:
+          type: string
+        settledCount:
+          type: integer
+        pointsAwarded:
+          type: integer
+        message:
+          type: string
+      required: [matchId, settledCount, pointsAwarded, message]
+
+    AdminArticle:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        content:
+          type: string
+        category:
+          type: string
+          enum: [breaking, transfers, injuries, press_conference, analysis, video_highlights]
+        imageUrl:
+          type: string
+        teamId:
+          type: ["string", "null"]
+        leagueId:
+          type: ["string", "null"]
+        isBreaking:
+          type: boolean
+        readTimeMinutes:
+          type: integer
+        publishedAt:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            type: string
+      required: [id, title, summary, content, category, imageUrl, isBreaking, readTimeMinutes, publishedAt, tags]
+
+    AdminArticleInput:
+      type: object
+      properties:
+        title:
+          type: string
+        summary:
+          type: string
+        content:
+          type: string
+        category:
+          type: string
+          enum: [breaking, transfers, injuries, press_conference, analysis, video_highlights]
+        imageUrl:
+          type: string
+        teamId:
+          type: ["string", "null"]
+        leagueId:
+          type: ["string", "null"]
+        isBreaking:
+          type: boolean
+        readTimeMinutes:
+          type: integer
+        tags:
+          type: array
+          items:
+            type: string
+      required: [title, summary, content, category, imageUrl, isBreaking, readTimeMinutes]
+
+    AdminArticleUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        summary:
+          type: string
+        content:
+          type: string
+        category:
+          type: string
+          enum: [breaking, transfers, injuries, press_conference, analysis, video_highlights]
+        imageUrl:
+          type: string
+        teamId:
+          type: ["string", "null"]
+        leagueId:
+          type: ["string", "null"]
+        isBreaking:
+          type: boolean
+        readTimeMinutes:
+          type: integer
+        tags:
+          type: array
+          items:
+            type: string
+
+    AdminPredictionConfig:
+      type: object
+      properties:
+        matchId:
+          type: string
+        matchName:
+          type: string
+        isOpen:
+          type: boolean
+        scorePoints:
+          type: integer
+        goalscorерPoints:
+          type: integer
+        momPoints:
+          type: integer
+        totalGoalsPoints:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time
+      required: [matchId, matchName, isOpen, scorePoints, goalscorерPoints, momPoints, totalGoalsPoints, updatedAt]
+
+    AdminPredictionConfigUpdate:
+      type: object
+      properties:
+        isOpen:
+          type: boolean
+        scorePoints:
+          type: integer
+        goalscorерPoints:
+          type: integer
+        momPoints:
+          type: integer
+        totalGoalsPoints:
+          type: integer
+
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        username:
+          type: string
+        country:
+          type: string
+        totalPoints:
+          type: integer
+        globalRank:
+          type: integer
+        totalPredictions:
+          type: integer
+        accuracy:
+          type: integer
+        level:
+          type: string
+        pointAdjustment:
+          type: integer
+        joinedAt:
+          type: string
+          format: date-time
+      required: [id, name, username, country, totalPoints, globalRank, totalPredictions, accuracy, level, pointAdjustment, joinedAt]
+
+    AdminPointAdjustmentInput:
+      type: object
+      properties:
+        adjustment:
+          type: integer
+        reason:
+          type: string
+      required: [adjustment, reason]
+
+    AdminLeaderboardResetInput:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [weekly, monthly]
+      required: [type]
+
+    AdminLeaderboardResetResult:
+      type: object
+      properties:
+        type:
+          type: string
+        resetAt:
+          type: string
+          format: date-time
+        message:
+          type: string
+      required: [type, resetAt, message]
+
+    AdminStats:
+      type: object
+      properties:
+        totalMatches:
+          type: integer
+        liveMatches:
+          type: integer
+        upcomingMatches:
+          type: integer
+        finishedMatches:
+          type: integer
+        totalArticles:
+          type: integer
+        breakingNewsCount:
+          type: integer
+        totalPredictions:
+          type: integer
+        pendingSettlements:
+          type: integer
+        totalUsers:
+          type: integer
+        activeThisWeek:
+          type: integer
+      required: [totalMatches, liveMatches, upcomingMatches, finishedMatches, totalArticles, breakingNewsCount, totalPredictions, pendingSettlements, totalUsers, activeThisWeek]

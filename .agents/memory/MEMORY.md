@@ -1,0 +1,2 @@
+- [Admin panel architecture](admin-panel.md) — /admin is a passcode-gated separate layout; admin routes must be declared before the main Layout <Route> in the wouter Switch so they match first.
+- [OpenAPI naming collision rule](openapi-naming.md) — use entity-shaped $ref names (AdminMatchInput, not CreateAdminMatchInput) to avoid TS2308 clashes with orval-generated <OperationId>Body names.

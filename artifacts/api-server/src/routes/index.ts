@@ -7,6 +7,7 @@ import predictionsRouter from "./predictions";
 import leaderboardRouter from "./leaderboard";
 import newsRouter from "./news";
 import profileRouter from "./profile";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(predictionsRouter);
 router.use(leaderboardRouter);
 router.use(newsRouter);
 router.use(profileRouter);
+router.use(adminRouter);
 
 export default router;
