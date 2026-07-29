@@ -1,0 +1,114 @@
+Bug Fixes & Functional Improvements
+
+The UI is complete.
+
+Do NOT redesign the interface.
+
+Only fix the following issues and connect everything to the backend.
+
+1. Predictions Page
+Today's matches are not displayed.
+Load today's real matches from the database or sports API.
+If there are no matches today, display a proper "No matches today" message.
+Remove all fake/demo matches.
+2. Prediction Button
+
+The "Predict Now" button does nothing.
+
+Implement:
+
+Open prediction dialog.
+Allow selecting:
+Home Win
+Draw
+Away Win
+Exact Score
+Save prediction to PostgreSQL.
+Prevent duplicate predictions.
+Show success confirmation.
+3. Leaderboard
+
+The Rankings page currently displays fake users.
+
+Replace demo data with real users from the database.
+
+Calculate rankings using:
+
+Total points
+Correct predictions
+Prediction accuracy
+
+Update automatically after match results are entered.
+
+4. Login
+
+Login is not working.
+
+Fix:
+
+Authentication API
+JWT
+Password validation
+Session management
+Redirect after login
+Error handling
+
+Users must stay logged in after refreshing the page.
+
+5. My Account
+
+Connect the Profile page to the logged-in user.
+
+Display:
+
+Avatar
+Username
+Email
+Points
+Rank
+Prediction history
+
+Enable:
+
+Edit profile
+Change password
+Logout
+6. Matches
+
+The application currently displays only a few matches.
+
+Improve the match system:
+
+Today's matches
+Tomorrow's matches
+Upcoming matches
+Finished matches
+
+Support pagination or infinite scrolling.
+
+Load all available matches instead of limiting the list.
+
+7. Real Data
+
+Remove all placeholder/demo data.
+
+Replace with:
+
+PostgreSQL database records.
+Sports API when available.
+Seed data only if the database is empty.
+8. Validation
+
+Verify that:
+
+Login works.
+Predictions are saved correctly.
+Rankings update automatically.
+Home page loads real data.
+Profile displays the current user.
+No demo content remains.
+9. Final Requirement
+
+Do not leave any page using mock, fake, placeholder or hardcoded data.
+
+Every screen must read and write from the real backend and PostgreSQL database.
