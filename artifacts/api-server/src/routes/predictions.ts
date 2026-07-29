@@ -5,55 +5,65 @@ import {
   CreatePredictionBody,
   CreatePredictionResponse,
   GetPredictionHistoryResponse,
-  CalculatePotentialPointsQueryParams,
-  CalculatePotentialPointsResponse,
-  ListRewardsResponse,
+  UpdatePredictionBody,
+  UpdatePredictionResponse,
 } from "@workspace/api-zod";
 import { db, predictionsTable } from "@workspace/db";
-import { matchPolls, rewards } from "../lib/mockData";
 import { eq, and } from "drizzle-orm";
 import { getMatchesMerged, type LiveMatch } from "../lib/footballApi";
 
 const router: IRouter = Router();
 
-/** Build a safe match stub for predictions whose match is no longer in the live feed */
-function matchStub(matchId: string): LiveMatch {
+/** Deadline = 5 minutes before kickoff */
+function getDeadline(scheduledAt: string): Date {
+  return new Date(new Date(scheduledAt).getTime() - 5 * 60 * 1000);
+}
+
+function isDeadlinePassed(scheduledAt: string): boolean {
+  return new Date() >= getDeadline(scheduledAt);
+}
+
+function matchStub(id: string): LiveMatch {
   return {
-    id: matchId,
-    homeTeam: { id: "unknown", name: "فريق المضيف", logo: "", country: "" },
-    awayTeam: { id: "unknown", name: "فريق الضيف", logo: "", country: "" },
+    id,
+    homeTeam: { id: "unknown", name: "الفريق الأول", logo: "", country: "" },
+    awayTeam: { id: "unknown", name: "الفريق الثاني", logo: "", country: "" },
+    league: { id: "unknown", name: "دوري", logo: "", country: "", season: "" },
     scheduledAt: new Date().toISOString(),
     status: "finished",
     homeScore: null,
     awayScore: null,
-    league: { id: "unknown", name: "دوري", logo: "", country: "", season: "" },
-    venue: "",
     minute: null,
+    venue: "",
   };
 }
 
+// ─── Available predictions ─────────────────────────────────────────────────────
+
 router.get("/predictions/available", async (req, res): Promise<void> => {
   const allMatches = await getMatchesMerged();
+
+  // Only matches not yet kicked off AND prediction deadline not passed
+  const now = new Date();
   const availableMatches = allMatches.filter(
-    (m) => m.status === "upcoming" || m.status === "live",
+    (m) => m.status === "upcoming" && now < getDeadline(m.scheduledAt),
   );
 
-  // Determine which matches the current user has already predicted
-  let predictedMatchIds = new Set<string>();
+  // Get matches user already predicted (only when authenticated)
+  const predictedMatchIds = new Set<string>();
   if (req.isAuthenticated()) {
-    const userId = parseInt(req.user.id, 10);
-    const userPredictions = await db
+    const myPreds = await db
       .select({ matchId: predictionsTable.matchId })
       .from(predictionsTable)
-      .where(eq(predictionsTable.userId, userId));
-    predictedMatchIds = new Set(userPredictions.map((p) => p.matchId));
+      .where(eq(predictionsTable.userId, parseInt(req.user.id, 10)));
+    myPreds.forEach((p) => predictedMatchIds.add(p.matchId));
   }
 
   const result = availableMatches.map((match) => ({
     match: match as unknown as never,
-    closesAt: match.scheduledAt,
+    closesAt: getDeadline(match.scheduledAt).toISOString(),
     pointsAvailable: 150,
-    crowdPrediction: (matchPolls as Record<string, typeof matchPolls[keyof typeof matchPolls]>)[match.id] ?? {
+    crowdPrediction: {
       matchId: match.id,
       homeWinPercent: 40,
       drawPercent: 30,
@@ -65,6 +75,8 @@ router.get("/predictions/available", async (req, res): Promise<void> => {
 
   res.json(ListAvailablePredictionsResponse.parse(result));
 });
+
+// ─── My predictions ─────────────────────────────────────────────────────────
 
 router.get("/predictions", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) {
@@ -93,34 +105,52 @@ router.get("/predictions", async (req, res): Promise<void> => {
       status: p.status,
       pointsEarned: p.pointsEarned ?? null,
       submittedAt: p.submittedAt.toISOString(),
+      canEdit: !isDeadlinePassed(match.scheduledAt),
     };
   });
 
   res.json(ListMyPredictionsResponse.parse(enriched));
 });
 
+// ─── Create prediction ─────────────────────────────────────────────────────
+
 router.post("/predictions", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "يجب تسجيل الدخول لإرسال توقع" });
+    res.status(401).json({ error: "يجب تسجيل الدخول للتوقع" });
     return;
   }
 
   const parsed = CreatePredictionBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    res.status(400).json({ error: "بيانات التوقع غير صحيحة" });
     return;
   }
 
-  const userId = parseInt(req.user.id, 10);
+  const { matchId, homeScorePrediction, awayScorePrediction, firstGoalscorer, manOfMatch, totalGoalsPrediction } = parsed.data;
 
-  // Prevent duplicate predictions for the same match
+  // Validate match exists and deadline not passed
+  const allMatches = await getMatchesMerged();
+  const match = allMatches.find((m) => m.id === matchId);
+
+  if (!match) {
+    res.status(404).json({ error: "المباراة غير موجودة" });
+    return;
+  }
+
+  if (isDeadlinePassed(match.scheduledAt)) {
+    res.status(400).json({ error: "انتهى وقت التوقع قبل 5 دقائق من بدء المباراة" });
+    return;
+  }
+
+  // Check for duplicate
+  const userId = parseInt(req.user.id, 10);
   const [existing] = await db
-    .select({ id: predictionsTable.id })
+    .select()
     .from(predictionsTable)
     .where(
       and(
         eq(predictionsTable.userId, userId),
-        eq(predictionsTable.matchId, parsed.data.matchId),
+        eq(predictionsTable.matchId, matchId),
       ),
     );
 
@@ -129,28 +159,16 @@ router.post("/predictions", async (req, res): Promise<void> => {
     return;
   }
 
-  // Validate match exists in the live feed
-  const allMatches = await getMatchesMerged();
-  const match = allMatches.find((m) => m.id === parsed.data.matchId);
-  if (!match) {
-    res.status(400).json({ error: "المباراة غير موجودة" });
-    return;
-  }
-  if (match.status === "finished") {
-    res.status(400).json({ error: "انتهت المباراة ولا يمكن التوقع عليها" });
-    return;
-  }
-
   const [inserted] = await db
     .insert(predictionsTable)
     .values({
       userId,
-      matchId: parsed.data.matchId,
-      homeScorePrediction: parsed.data.homeScorePrediction ?? null,
-      awayScorePrediction: parsed.data.awayScorePrediction ?? null,
-      firstGoalscorer: parsed.data.firstGoalscorer ?? null,
-      manOfMatch: parsed.data.manOfMatch ?? null,
-      totalGoalsPrediction: parsed.data.totalGoalsPrediction ?? null,
+      matchId,
+      homeScorePrediction: homeScorePrediction ?? null,
+      awayScorePrediction: awayScorePrediction ?? null,
+      firstGoalscorer: firstGoalscorer ?? null,
+      manOfMatch: manOfMatch ?? null,
+      totalGoalsPrediction: totalGoalsPrediction ?? null,
       status: "pending",
     })
     .returning();
@@ -167,9 +185,121 @@ router.post("/predictions", async (req, res): Promise<void> => {
       status: inserted.status,
       pointsEarned: null,
       submittedAt: inserted.submittedAt.toISOString(),
+      canEdit: true,
     }),
   );
 });
+
+// ─── Update prediction (before deadline) ──────────────────────────────────────
+
+router.patch("/predictions/:id", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "يجب تسجيل الدخول" });
+    return;
+  }
+
+  const predId = parseInt(req.params.id, 10);
+  if (isNaN(predId)) {
+    res.status(400).json({ error: "معرف التوقع غير صحيح" });
+    return;
+  }
+
+  const userId = parseInt(req.user.id, 10);
+
+  const [pred] = await db
+    .select()
+    .from(predictionsTable)
+    .where(and(eq(predictionsTable.id, predId), eq(predictionsTable.userId, userId)));
+
+  if (!pred) {
+    res.status(404).json({ error: "التوقع غير موجود" });
+    return;
+  }
+
+  // Check deadline
+  const allMatches = await getMatchesMerged();
+  const match = allMatches.find((m) => m.id === pred.matchId) ?? matchStub(pred.matchId);
+
+  if (isDeadlinePassed(match.scheduledAt)) {
+    res.status(400).json({ error: "انتهى وقت التعديل — التوقعات تُغلق قبل 5 دقائق من بدء المباراة" });
+    return;
+  }
+
+  const parsed = UpdatePredictionBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "بيانات التعديل غير صحيحة" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(predictionsTable)
+    .set({
+      homeScorePrediction: parsed.data.homeScorePrediction ?? pred.homeScorePrediction,
+      awayScorePrediction: parsed.data.awayScorePrediction ?? pred.awayScorePrediction,
+      firstGoalscorer: parsed.data.firstGoalscorer ?? pred.firstGoalscorer,
+      manOfMatch: parsed.data.manOfMatch ?? pred.manOfMatch,
+      totalGoalsPrediction: parsed.data.totalGoalsPrediction ?? pred.totalGoalsPrediction,
+    })
+    .where(eq(predictionsTable.id, predId))
+    .returning();
+
+  res.json(
+    UpdatePredictionResponse.parse({
+      id: String(updated.id),
+      match: match as unknown as never,
+      homeScorePrediction: updated.homeScorePrediction ?? null,
+      awayScorePrediction: updated.awayScorePrediction ?? null,
+      firstGoalscorer: updated.firstGoalscorer ?? null,
+      manOfMatch: updated.manOfMatch ?? null,
+      totalGoalsPrediction: updated.totalGoalsPrediction ?? null,
+      status: updated.status,
+      pointsEarned: updated.pointsEarned ?? null,
+      submittedAt: updated.submittedAt.toISOString(),
+      canEdit: true,
+    }),
+  );
+});
+
+// ─── Delete prediction (before deadline) ──────────────────────────────────────
+
+router.delete("/predictions/:id", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "يجب تسجيل الدخول" });
+    return;
+  }
+
+  const predId = parseInt(req.params.id, 10);
+  if (isNaN(predId)) {
+    res.status(400).json({ error: "معرف التوقع غير صحيح" });
+    return;
+  }
+
+  const userId = parseInt(req.user.id, 10);
+
+  const [pred] = await db
+    .select()
+    .from(predictionsTable)
+    .where(and(eq(predictionsTable.id, predId), eq(predictionsTable.userId, userId)));
+
+  if (!pred) {
+    res.status(404).json({ error: "التوقع غير موجود" });
+    return;
+  }
+
+  // Check deadline
+  const allMatches = await getMatchesMerged();
+  const match = allMatches.find((m) => m.id === pred.matchId) ?? matchStub(pred.matchId);
+
+  if (isDeadlinePassed(match.scheduledAt)) {
+    res.status(400).json({ error: "انتهى وقت الحذف — التوقعات تُغلق قبل 5 دقائق من بدء المباراة" });
+    return;
+  }
+
+  await db.delete(predictionsTable).where(eq(predictionsTable.id, predId));
+  res.status(204).send();
+});
+
+// ─── Prediction history ────────────────────────────────────────────────────────
 
 router.get("/predictions/history", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) {
@@ -187,10 +317,7 @@ router.get("/predictions/history", async (req, res): Promise<void> => {
 
   const total = dbPredictions.length;
   const won = dbPredictions.filter((p) => p.status === "won").length;
-  const totalPoints = dbPredictions.reduce(
-    (sum, p) => sum + (p.pointsEarned ?? 0),
-    0,
-  );
+  const totalPoints = dbPredictions.reduce((sum, p) => sum + (p.pointsEarned ?? 0), 0);
   const accuracy = total > 0 ? Math.round((won / total) * 100) : 0;
 
   const enriched = dbPredictions.map((p) => {
@@ -206,6 +333,7 @@ router.get("/predictions/history", async (req, res): Promise<void> => {
       status: p.status,
       pointsEarned: p.pointsEarned ?? null,
       submittedAt: p.submittedAt.toISOString(),
+      canEdit: !isDeadlinePassed(match.scheduledAt),
     };
   });
 
@@ -218,45 +346,6 @@ router.get("/predictions/history", async (req, res): Promise<void> => {
       predictions: enriched,
     }),
   );
-});
-
-router.get("/predictions/points-calculator", async (req, res): Promise<void> => {
-  const parsed = CalculatePotentialPointsQueryParams.safeParse(req.query);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-
-  const pointsMap: Record<
-    string,
-    { base: number; difficulty: "easy" | "medium" | "hard" }
-  > = {
-    score: { base: 100, difficulty: "hard" },
-    first_goalscorer: { base: 75, difficulty: "hard" },
-    man_of_match: { base: 50, difficulty: "medium" },
-    total_goals: { base: 40, difficulty: "medium" },
-  };
-
-  const typeInfo = pointsMap[parsed.data.predictionType] ?? {
-    base: 50,
-    difficulty: "medium" as const,
-  };
-  const multiplier = 1.5;
-
-  res.json(
-    CalculatePotentialPointsResponse.parse({
-      matchId: parsed.data.matchId,
-      predictionType: parsed.data.predictionType,
-      basePoints: typeInfo.base,
-      bonusMultiplier: multiplier,
-      potentialPoints: Math.round(typeInfo.base * multiplier),
-      difficulty: typeInfo.difficulty,
-    }),
-  );
-});
-
-router.get("/rewards", async (_req, res): Promise<void> => {
-  res.json(ListRewardsResponse.parse(rewards));
 });
 
 export default router;

@@ -10,7 +10,9 @@ import type { NewsArticleDetailCategory } from './newsArticleDetailCategory';
 export interface NewsArticleDetail {
   id: string;
   title: string;
+  subtitle: string;
   summary: string;
+  author: string;
   content: string;
   category: NewsArticleDetailCategory;
   imageUrl: string;
@@ -20,8 +22,11 @@ export interface NewsArticleDetail {
   /** @nullable */
   leagueId?: string | null;
   isBreaking: boolean;
+  isFeatured: boolean;
   readTimeMinutes: number;
+  viewCount: number;
   /** @nullable */
   videoUrl?: string | null;
   tags: string[];
+  isBookmarked: boolean;
 }

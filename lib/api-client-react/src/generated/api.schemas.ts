@@ -197,7 +197,9 @@ export const NewsArticleCategory = {
 export interface NewsArticle {
   id: string;
   title: string;
+  subtitle: string;
   summary: string;
+  author: string;
   category: NewsArticleCategory;
   imageUrl: string;
   publishedAt: string;
@@ -206,7 +208,10 @@ export interface NewsArticle {
   /** @nullable */
   leagueId?: string | null;
   isBreaking: boolean;
+  isFeatured: boolean;
   readTimeMinutes: number;
+  viewCount: number;
+  isBookmarked: boolean;
 }
 
 export type PredictionStatus = typeof PredictionStatus[keyof typeof PredictionStatus];
@@ -355,7 +360,9 @@ export const NewsArticleDetailCategory = {
 export interface NewsArticleDetail {
   id: string;
   title: string;
+  subtitle: string;
   summary: string;
+  author: string;
   content: string;
   category: NewsArticleDetailCategory;
   imageUrl: string;
@@ -365,10 +372,13 @@ export interface NewsArticleDetail {
   /** @nullable */
   leagueId?: string | null;
   isBreaking: boolean;
+  isFeatured: boolean;
   readTimeMinutes: number;
+  viewCount: number;
   /** @nullable */
   videoUrl?: string | null;
   tags: string[];
+  isBookmarked: boolean;
 }
 
 export interface UserProfile {
@@ -437,6 +447,33 @@ export interface ProfileStats {
   bestStreak: number;
   globalRank: number;
   weeklyRank: number;
+}
+
+export interface PredictionUpdate {
+  /** @nullable */
+  homeScorePrediction?: number | null;
+  /** @nullable */
+  awayScorePrediction?: number | null;
+  /** @nullable */
+  firstGoalscorer?: string | null;
+  /** @nullable */
+  manOfMatch?: string | null;
+  /** @nullable */
+  totalGoalsPrediction?: number | null;
+}
+
+export interface BookmarkResult {
+  bookmarked: boolean;
+  articleId: string;
+}
+
+export interface ProfileSetupInput {
+  /**
+     * @minLength 2
+     * @maxLength 50
+     */
+  displayName: string;
+  username?: string;
 }
 
 export type AdminMatchStatus = typeof AdminMatchStatus[keyof typeof AdminMatchStatus];
@@ -733,6 +770,14 @@ export interface AdminStats {
   activeThisWeek: number;
 }
 
+export type AuthUserRole = typeof AuthUserRole[keyof typeof AuthUserRole];
+
+
+export const AuthUserRole = {
+  user: 'user',
+  admin: 'admin',
+} as const;
+
 export interface AuthUser {
   id: string;
   /** @nullable */
@@ -743,6 +788,10 @@ export interface AuthUser {
   lastName: string | null;
   /** @nullable */
   profileImageUrl: string | null;
+  role: AuthUserRole;
+  /** @nullable */
+  displayName: string | null;
+  isProfileComplete: boolean;
 }
 
 export interface AuthUserEnvelope {
@@ -890,6 +939,10 @@ export const GetLeaderboardType = {
 
 export type ListNewsParams = {
 category?: ListNewsCategory;
+/**
+ * @nullable
+ */
+search?: string | null;
 /**
  * @nullable
  */

@@ -12,6 +12,10 @@ category?: ListNewsCategory;
 /**
  * @nullable
  */
+search?: string | null;
+/**
+ * @nullable
+ */
 teamId?: string | null;
 /**
  * @nullable

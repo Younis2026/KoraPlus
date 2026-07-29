@@ -1,4 +1,6 @@
 import type { AuthUser } from '@workspace/api-zod';
+import { db, usersTable } from '@workspace/db';
+import { eq } from 'drizzle-orm';
 import { type NextFunction, type Request, type Response } from 'express';
 import * as oidc from 'openid-client';
 
@@ -80,6 +82,22 @@ export async function authMiddleware(
     return;
   }
 
-  req.user = refreshed.user;
+  // Fetch fresh role + displayName + isProfileComplete from DB
+  try {
+    const [dbUser] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, parseInt(refreshed.user.id, 10)));
+
+    req.user = {
+      ...refreshed.user,
+      role: (dbUser?.role ?? 'user') as 'user' | 'admin',
+      displayName: dbUser?.name ?? null,
+      isProfileComplete: dbUser?.isProfileComplete ?? false,
+    };
+  } catch {
+    req.user = refreshed.user;
+  }
+
   next();
 }

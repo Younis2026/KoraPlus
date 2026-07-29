@@ -6,14 +6,19 @@ export interface AuthUser {
   firstName: string | null;
   lastName: string | null;
   profileImageUrl: string | null;
+  role: 'user' | 'admin';
+  displayName: string | null;
+  isProfileComplete: boolean;
 }
 
 interface AuthState {
   user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   login: () => void;
   logout: () => void;
+  refetch: () => void;
 }
 
 function getBasePath() {
@@ -24,13 +29,13 @@ export function useAuth(): AuthState {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchUser = useCallback(() => {
     let cancelled = false;
-
+    setIsLoading(true);
     fetch('/api/auth/user', { credentials: 'include' })
       .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json() as Promise<{ user: AuthUser | null }>;
+        if (!res.ok) throw new Error('Failed');
+        return res.json();
       })
       .then((data) => {
         if (!cancelled) {
@@ -44,27 +49,31 @@ export function useAuth(): AuthState {
           setIsLoading(false);
         }
       });
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    const cancel = fetchUser();
+    return cancel;
+  }, [fetchUser]);
 
   const login = useCallback(() => {
     const base = getBasePath();
-    window.location.href = `/api/login?returnTo=${encodeURIComponent(base)}`;
+    const returnTo = encodeURIComponent(window.location.pathname.replace(base, '') || '/');
+    window.location.href = `/api/login?returnTo=${returnTo}`;
   }, []);
 
   const logout = useCallback(() => {
-    const base = getBasePath();
-    window.location.href = `/api/logout?returnTo=${encodeURIComponent(base)}`;
+    window.location.href = `/api/logout?returnTo=/`;
   }, []);
 
   return {
     user,
     isLoading,
-    isAuthenticated: !!user,
+    isAuthenticated: user != null,
+    isAdmin: user?.role === 'admin',
     login,
     logout,
+    refetch: fetchUser,
   };
 }

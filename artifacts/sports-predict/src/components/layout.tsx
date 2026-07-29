@@ -1,7 +1,22 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useLocation } from 'wouter';
 import { Navigation } from '@/components/navigation';
+import { useAppAuth } from '@/components/auth-provider';
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  const { user, isAuthenticated, isLoading } = useAppAuth();
+  const [location, setLocation] = useLocation();
+
+  // Redirect first-time users to set their display name
+  useEffect(() => {
+    if (isLoading) return;
+    if (!isAuthenticated) return;
+    if (location === '/profile/setup') return;
+    if (user && !user.isProfileComplete) {
+      setLocation('/profile/setup');
+    }
+  }, [isLoading, isAuthenticated, user, location, setLocation]);
+
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground overflow-x-hidden relative">
       <div className="flex-1 pb-16 md:pb-0 relative z-10">

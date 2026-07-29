@@ -10,7 +10,9 @@ import type { NewsArticleCategory } from './newsArticleCategory';
 export interface NewsArticle {
   id: string;
   title: string;
+  subtitle: string;
   summary: string;
+  author: string;
   category: NewsArticleCategory;
   imageUrl: string;
   publishedAt: Date;
@@ -19,5 +21,8 @@ export interface NewsArticle {
   /** @nullable */
   leagueId?: string | null;
   isBreaking: boolean;
+  isFeatured: boolean;
   readTimeMinutes: number;
+  viewCount: number;
+  isBookmarked: boolean;
 }

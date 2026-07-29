@@ -43,8 +43,12 @@ import {
 } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { matches as mockMatches, news as mockNews, leaderboard } from "../lib/mockData";
+import { requireAdmin } from "../middlewares/requireAdmin";
 
 const router: IRouter = Router();
+
+// All admin routes require role === 'admin'
+router.use(requireAdmin);
 
 // ─── Helper: serialize admin match row ────────────────────────────────────────
 async function serializeAdminMatch(row: typeof adminMatchesTable.$inferSelect) {

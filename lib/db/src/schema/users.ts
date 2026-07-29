@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -20,6 +20,9 @@ export const usersTable = pgTable("users", {
   accuracy: integer("accuracy").notNull().default(0),
   level: text("level").notNull().default("مبتدئ"),
   badgeCount: integer("badge_count").notNull().default(0),
+  // Access control
+  role: text("role").notNull().default("user"),
+  isProfileComplete: boolean("is_profile_complete").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

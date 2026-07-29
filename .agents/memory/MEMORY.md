@@ -1,2 +1,3 @@
-- [Admin panel architecture](admin-panel.md) — /admin is a passcode-gated separate layout; admin routes must be declared before the main Layout <Route> in the wouter Switch so they match first.
+- [Admin panel architecture](admin-panel.md) — /admin is a role-based auth layout; admin routes declared before main Layout in wouter Switch; `requireAdmin` middleware protects all /admin/* backend routes.
 - [OpenAPI naming collision rule](openapi-naming.md) — use entity-shaped $ref names (AdminMatchInput, not CreateAdminMatchInput) to avoid TS2308 clashes with orval-generated <OperationId>Body names.
+- [Auth user shape](auth-user-shape.md) — AuthUser now includes role, displayName, isProfileComplete; authMiddleware fetches fresh DB row each request for role freshness; both web callback and mobile callback must populate all three fields in SessionData.

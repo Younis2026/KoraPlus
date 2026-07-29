@@ -11,7 +11,9 @@ import MatchesPage from '@/pages/matches';
 import MatchDetailPage from '@/pages/match-detail';
 import PredictionsPage from '@/pages/predictions';
 import NewsPage from '@/pages/news';
+import NewsArticlePage from '@/pages/news-article';
 import ProfilePage from '@/pages/profile';
+import ProfileSetupPage from '@/pages/profile-setup';
 import LeaderboardPage from '@/pages/leaderboard';
 import NotFound from '@/pages/not-found';
 
@@ -34,7 +36,7 @@ const queryClient = new QueryClient({
 function Router() {
   return (
     <Switch>
-      {/* Admin Routes */}
+      {/* Admin Routes — must be declared before main Layout route */}
       <Route path="/admin" component={() => <AdminLayout><AdminLoginPage /></AdminLayout>} />
       <Route path="/admin/dashboard" component={() => <AdminLayout><AdminDashboardPage /></AdminLayout>} />
       <Route path="/admin/matches" component={() => <AdminLayout><AdminMatchesPage /></AdminLayout>} />
@@ -51,8 +53,10 @@ function Router() {
             <Route path="/matches/:id" component={MatchDetailPage} />
             <Route path="/predictions" component={PredictionsPage} />
             <Route path="/news" component={NewsPage} />
+            <Route path="/news/:id" component={NewsArticlePage} />
             <Route path="/leaderboard" component={LeaderboardPage} />
             <Route path="/profile" component={ProfilePage} />
+            <Route path="/profile/setup" component={ProfileSetupPage} />
             <Route component={NotFound} />
           </Switch>
         </Layout>

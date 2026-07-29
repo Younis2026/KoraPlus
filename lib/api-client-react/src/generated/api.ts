@@ -39,6 +39,7 @@ import type {
   AdminUser,
   AuthUserEnvelope,
   BeginBrowserLoginParams,
+  BookmarkResult,
   CalculatePotentialPointsParams,
   ErrorEnvelope,
   FavoritesUpdate,
@@ -71,6 +72,8 @@ import type {
   PredictionHistory,
   PredictionInput,
   PredictionMatch,
+  PredictionUpdate,
+  ProfileSetupInput,
   ProfileStats,
   ProfileUpdate,
   Reward,
@@ -808,6 +811,149 @@ export const useCreatePrediction = <TError = ErrorType<void>,
       return useMutation(getCreatePredictionMutationOptions(options));
     }
 
+export const getUpdatePredictionUrl = (id: string,) => {
+
+
+
+
+  return `/api/predictions/${id}`
+}
+
+/**
+ * @summary Edit a prediction (only before deadline)
+ */
+export const updatePrediction = async (id: string,
+    predictionUpdate: PredictionUpdate, options?: RequestInit): Promise<Prediction> => {
+
+  return customFetch<Prediction>(getUpdatePredictionUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(predictionUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdatePredictionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePrediction>>, TError,{id: string;data: BodyType<PredictionUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePrediction>>, TError,{id: string;data: BodyType<PredictionUpdate>}, TContext> => {
+
+const mutationKey = ['updatePrediction'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePrediction>>, {id: string;data: BodyType<PredictionUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updatePrediction(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePredictionMutationResult = NonNullable<Awaited<ReturnType<typeof updatePrediction>>>
+    export type UpdatePredictionMutationBody = BodyType<PredictionUpdate>
+    export type UpdatePredictionMutationError = ErrorType<void>
+
+    /**
+ * @summary Edit a prediction (only before deadline)
+ */
+export const useUpdatePrediction = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePrediction>>, TError,{id: string;data: BodyType<PredictionUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updatePrediction>>,
+        TError,
+        {id: string;data: BodyType<PredictionUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdatePredictionMutationOptions(options));
+    }
+
+export const getDeletePredictionUrl = (id: string,) => {
+
+
+
+
+  return `/api/predictions/${id}`
+}
+
+/**
+ * @summary Delete a prediction (only before deadline)
+ */
+export const deletePrediction = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeletePredictionUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeletePredictionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePrediction>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePrediction>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deletePrediction'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePrediction>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deletePrediction(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePredictionMutationResult = NonNullable<Awaited<ReturnType<typeof deletePrediction>>>
+
+    export type DeletePredictionMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a prediction (only before deadline)
+ */
+export const useDeletePrediction = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePrediction>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deletePrediction>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeletePredictionMutationOptions(options));
+    }
+
 export const getGetPredictionHistoryUrl = () => {
 
 
@@ -1368,6 +1514,148 @@ export function useGetNewsArticle<TData = Awaited<ReturnType<typeof getNewsArtic
 
 
 
+export const getBookmarkArticleUrl = (id: string,) => {
+
+
+
+
+  return `/api/news/${id}/bookmark`
+}
+
+/**
+ * @summary Bookmark a news article
+ */
+export const bookmarkArticle = async (id: string, options?: RequestInit): Promise<BookmarkResult> => {
+
+  return customFetch<BookmarkResult>(getBookmarkArticleUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getBookmarkArticleMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bookmarkArticle>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof bookmarkArticle>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['bookmarkArticle'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bookmarkArticle>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  bookmarkArticle(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BookmarkArticleMutationResult = NonNullable<Awaited<ReturnType<typeof bookmarkArticle>>>
+
+    export type BookmarkArticleMutationError = ErrorType<void>
+
+    /**
+ * @summary Bookmark a news article
+ */
+export const useBookmarkArticle = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bookmarkArticle>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof bookmarkArticle>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getBookmarkArticleMutationOptions(options));
+    }
+
+export const getUnbookmarkArticleUrl = (id: string,) => {
+
+
+
+
+  return `/api/news/${id}/bookmark`
+}
+
+/**
+ * @summary Remove bookmark from a news article
+ */
+export const unbookmarkArticle = async (id: string, options?: RequestInit): Promise<BookmarkResult> => {
+
+  return customFetch<BookmarkResult>(getUnbookmarkArticleUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getUnbookmarkArticleMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unbookmarkArticle>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unbookmarkArticle>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['unbookmarkArticle'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unbookmarkArticle>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  unbookmarkArticle(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnbookmarkArticleMutationResult = NonNullable<Awaited<ReturnType<typeof unbookmarkArticle>>>
+
+    export type UnbookmarkArticleMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove bookmark from a news article
+ */
+export const useUnbookmarkArticle = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unbookmarkArticle>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unbookmarkArticle>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getUnbookmarkArticleMutationOptions(options));
+    }
+
 export const getGetProfileUrl = () => {
 
 
@@ -1514,6 +1802,77 @@ export const useUpdateProfile = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateProfileMutationOptions(options));
+    }
+
+export const getSetupProfileUrl = () => {
+
+
+
+
+  return `/api/profile/setup`
+}
+
+/**
+ * @summary Complete profile setup (set display name after first login)
+ */
+export const setupProfile = async (profileSetupInput: ProfileSetupInput, options?: RequestInit): Promise<UserProfile> => {
+
+  return customFetch<UserProfile>(getSetupProfileUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(profileSetupInput)
+  }
+);}
+
+
+
+
+
+export const getSetupProfileMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setupProfile>>, TError,{data: BodyType<ProfileSetupInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setupProfile>>, TError,{data: BodyType<ProfileSetupInput>}, TContext> => {
+
+const mutationKey = ['setupProfile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setupProfile>>, {data: BodyType<ProfileSetupInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  setupProfile(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetupProfileMutationResult = NonNullable<Awaited<ReturnType<typeof setupProfile>>>
+    export type SetupProfileMutationBody = BodyType<ProfileSetupInput>
+    export type SetupProfileMutationError = ErrorType<void>
+
+    /**
+ * @summary Complete profile setup (set display name after first login)
+ */
+export const useSetupProfile = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setupProfile>>, TError,{data: BodyType<ProfileSetupInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setupProfile>>,
+        TError,
+        {data: BodyType<ProfileSetupInput>},
+        TContext
+      > => {
+      return useMutation(getSetupProfileMutationOptions(options));
     }
 
 export const getGetAchievementsUrl = () => {

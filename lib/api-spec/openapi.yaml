@@ -190,6 +190,52 @@ paths:
         "400":
           description: Invalid input
 
+  /predictions/{id}:
+    patch:
+      operationId: updatePrediction
+      tags: [predictions]
+      summary: Edit a prediction (only before deadline)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PredictionUpdate"
+      responses:
+        "200":
+          description: Prediction updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Prediction"
+        "400":
+          description: Deadline passed or invalid input
+        "404":
+          description: Not found
+    delete:
+      operationId: deletePrediction
+      tags: [predictions]
+      summary: Delete a prediction (only before deadline)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "400":
+          description: Deadline passed
+        "404":
+          description: Not found
+
   /predictions/history:
     get:
       operationId: getPredictionHistory
@@ -295,6 +341,10 @@ paths:
             type: string
             enum: [breaking, transfers, injuries, press_conference, analysis, video_highlights, all]
             default: all
+        - name: search
+          in: query
+          schema:
+            type: ["string", "null"]
         - name: teamId
           in: query
           schema:
@@ -339,6 +389,46 @@ paths:
         "404":
           description: Not found
 
+  /news/{id}/bookmark:
+    post:
+      operationId: bookmarkArticle
+      tags: [news]
+      summary: Bookmark a news article
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Bookmark toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookmarkResult"
+        "401":
+          description: Not authenticated
+    delete:
+      operationId: unbookmarkArticle
+      tags: [news]
+      summary: Remove bookmark from a news article
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Bookmark removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookmarkResult"
+        "401":
+          description: Not authenticated
+
   /profile:
     get:
       operationId: getProfile
@@ -368,6 +458,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserProfile"
+
+  /profile/setup:
+    patch:
+      operationId: setupProfile
+      tags: [profile]
+      summary: Complete profile setup (set display name after first login)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileSetupInput"
+      responses:
+        "200":
+          description: Profile setup complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Not authenticated
 
   /profile/achievements:
     get:
@@ -1493,7 +1604,11 @@ components:
           type: string
         title:
           type: string
+        subtitle:
+          type: string
         summary:
+          type: string
+        author:
           type: string
         category:
           type: string
@@ -1509,9 +1624,15 @@ components:
           type: ["string", "null"]
         isBreaking:
           type: boolean
+        isFeatured:
+          type: boolean
         readTimeMinutes:
           type: integer
-      required: [id, title, summary, category, imageUrl, publishedAt, isBreaking, readTimeMinutes]
+        viewCount:
+          type: integer
+        isBookmarked:
+          type: boolean
+      required: [id, title, subtitle, summary, author, category, imageUrl, publishedAt, isBreaking, isFeatured, readTimeMinutes, viewCount, isBookmarked]
 
     NewsArticleDetail:
       type: object
@@ -1520,7 +1641,11 @@ components:
           type: string
         title:
           type: string
+        subtitle:
+          type: string
         summary:
+          type: string
+        author:
           type: string
         content:
           type: string
@@ -1538,7 +1663,11 @@ components:
           type: ["string", "null"]
         isBreaking:
           type: boolean
+        isFeatured:
+          type: boolean
         readTimeMinutes:
+          type: integer
+        viewCount:
           type: integer
         videoUrl:
           type: ["string", "null"]
@@ -1546,7 +1675,9 @@ components:
           type: array
           items:
             type: string
-      required: [id, title, summary, content, category, imageUrl, publishedAt, isBreaking, readTimeMinutes, tags]
+        isBookmarked:
+          type: boolean
+      required: [id, title, subtitle, summary, author, content, category, imageUrl, publishedAt, isBreaking, isFeatured, readTimeMinutes, viewCount, tags, isBookmarked]
 
     UserProfile:
       type: object
@@ -1664,6 +1795,40 @@ components:
         weeklyRank:
           type: integer
       required: [totalPoints, weeklyPoints, monthlyPoints, totalPredictions, wonPredictions, accuracy, currentStreak, bestStreak, globalRank, weeklyRank]
+
+    PredictionUpdate:
+      type: object
+      properties:
+        homeScorePrediction:
+          type: ["integer", "null"]
+        awayScorePrediction:
+          type: ["integer", "null"]
+        firstGoalscorer:
+          type: ["string", "null"]
+        manOfMatch:
+          type: ["string", "null"]
+        totalGoalsPrediction:
+          type: ["integer", "null"]
+
+    BookmarkResult:
+      type: object
+      required: [bookmarked, articleId]
+      properties:
+        bookmarked:
+          type: boolean
+        articleId:
+          type: string
+
+    ProfileSetupInput:
+      type: object
+      required: [displayName]
+      properties:
+        displayName:
+          type: string
+          minLength: 2
+          maxLength: 50
+        username:
+          type: string
 
     # ─── Admin schemas ────────────────────────────────────────────────────────
 
@@ -2010,7 +2175,7 @@ components:
 
     AuthUser:
       type: object
-      required: [id, email, firstName, lastName, profileImageUrl]
+      required: [id, email, firstName, lastName, profileImageUrl, role, displayName, isProfileComplete]
       properties:
         id:
           type: string
@@ -2022,6 +2187,13 @@ components:
           type: [string, 'null']
         profileImageUrl:
           type: [string, 'null']
+        role:
+          type: string
+          enum: [user, admin]
+        displayName:
+          type: [string, 'null']
+        isProfileComplete:
+          type: boolean
 
     AuthUserEnvelope:
       type: object

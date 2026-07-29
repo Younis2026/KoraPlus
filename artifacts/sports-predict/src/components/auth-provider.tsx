@@ -5,16 +5,20 @@ interface AuthContextValue {
   user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   login: () => void;
   logout: () => void;
+  refetch: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue>({
   user: null,
   isLoading: true,
   isAuthenticated: false,
+  isAdmin: false,
   login: () => {},
   logout: () => {},
+  refetch: () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {

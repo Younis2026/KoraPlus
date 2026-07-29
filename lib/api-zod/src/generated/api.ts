@@ -23,14 +23,19 @@ export const GetHomeSummaryResponse = zod.object({
   "breakingNews": zod.array(zod.object({
   "id": zod.string(),
   "title": zod.string(),
+  "subtitle": zod.string(),
   "summary": zod.string(),
+  "author": zod.string(),
   "category": zod.enum(['breaking', 'transfers', 'injuries', 'press_conference', 'analysis', 'video_highlights']),
   "imageUrl": zod.string(),
   "publishedAt": zod.coerce.date(),
   "teamId": zod.string().nullish(),
   "leagueId": zod.string().nullish(),
   "isBreaking": zod.boolean(),
-  "readTimeMinutes": zod.number()
+  "isFeatured": zod.boolean(),
+  "readTimeMinutes": zod.number(),
+  "viewCount": zod.number(),
+  "isBookmarked": zod.boolean()
 })),
   "todayMatches": zod.array(zod.object({
   "id": zod.string(),
@@ -460,6 +465,72 @@ export const CreatePredictionResponse = zod.object({
 
 
 /**
+ * @summary Edit a prediction (only before deadline)
+ */
+export const UpdatePredictionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdatePredictionBody = zod.object({
+  "homeScorePrediction": zod.number().nullish(),
+  "awayScorePrediction": zod.number().nullish(),
+  "firstGoalscorer": zod.string().nullish(),
+  "manOfMatch": zod.string().nullish(),
+  "totalGoalsPrediction": zod.number().nullish()
+})
+
+export const UpdatePredictionResponse = zod.object({
+  "id": zod.string(),
+  "match": zod.object({
+  "id": zod.string(),
+  "homeTeam": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "logo": zod.string(),
+  "country": zod.string()
+}),
+  "awayTeam": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "logo": zod.string(),
+  "country": zod.string()
+}),
+  "league": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "logo": zod.string(),
+  "country": zod.string(),
+  "season": zod.string()
+}),
+  "scheduledAt": zod.coerce.date(),
+  "status": zod.enum(['upcoming', 'live', 'finished', 'postponed']),
+  "homeScore": zod.number().nullish(),
+  "awayScore": zod.number().nullish(),
+  "minute": zod.number().nullish(),
+  "venue": zod.string()
+}),
+  "homeScorePrediction": zod.number().nullish(),
+  "awayScorePrediction": zod.number().nullish(),
+  "firstGoalscorer": zod.string().nullish(),
+  "manOfMatch": zod.string().nullish(),
+  "totalGoalsPrediction": zod.number().nullish(),
+  "status": zod.enum(['pending', 'won', 'lost', 'partial']),
+  "pointsEarned": zod.number().nullish(),
+  "submittedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a prediction (only before deadline)
+ */
+export const DeletePredictionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DeletePredictionResponse = zod.void()
+
+
+/**
  * @summary Get prediction results and history
  */
 export const GetPredictionHistoryResponse = zod.object({
@@ -613,6 +684,7 @@ export const listNewsQueryPageDefault = 1;
 
 export const ListNewsQueryParams = zod.object({
   "category": zod.enum(['breaking', 'transfers', 'injuries', 'press_conference', 'analysis', 'video_highlights', 'all']).default(listNewsQueryCategoryDefault),
+  "search": zod.coerce.string().nullish(),
   "teamId": zod.coerce.string().nullish(),
   "leagueId": zod.coerce.string().nullish(),
   "page": zod.coerce.number().default(listNewsQueryPageDefault)
@@ -621,14 +693,19 @@ export const ListNewsQueryParams = zod.object({
 export const ListNewsResponseItem = zod.object({
   "id": zod.string(),
   "title": zod.string(),
+  "subtitle": zod.string(),
   "summary": zod.string(),
+  "author": zod.string(),
   "category": zod.enum(['breaking', 'transfers', 'injuries', 'press_conference', 'analysis', 'video_highlights']),
   "imageUrl": zod.string(),
   "publishedAt": zod.coerce.date(),
   "teamId": zod.string().nullish(),
   "leagueId": zod.string().nullish(),
   "isBreaking": zod.boolean(),
-  "readTimeMinutes": zod.number()
+  "isFeatured": zod.boolean(),
+  "readTimeMinutes": zod.number(),
+  "viewCount": zod.number(),
+  "isBookmarked": zod.boolean()
 })
 export const ListNewsResponse = zod.array(ListNewsResponseItem)
 
@@ -643,7 +720,9 @@ export const GetNewsArticleParams = zod.object({
 export const GetNewsArticleResponse = zod.object({
   "id": zod.string(),
   "title": zod.string(),
+  "subtitle": zod.string(),
   "summary": zod.string(),
+  "author": zod.string(),
   "content": zod.string(),
   "category": zod.enum(['breaking', 'transfers', 'injuries', 'press_conference', 'analysis', 'video_highlights']),
   "imageUrl": zod.string(),
@@ -651,9 +730,38 @@ export const GetNewsArticleResponse = zod.object({
   "teamId": zod.string().nullish(),
   "leagueId": zod.string().nullish(),
   "isBreaking": zod.boolean(),
+  "isFeatured": zod.boolean(),
   "readTimeMinutes": zod.number(),
+  "viewCount": zod.number(),
   "videoUrl": zod.string().nullish(),
-  "tags": zod.array(zod.string())
+  "tags": zod.array(zod.string()),
+  "isBookmarked": zod.boolean()
+})
+
+
+/**
+ * @summary Bookmark a news article
+ */
+export const BookmarkArticleParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const BookmarkArticleResponse = zod.object({
+  "bookmarked": zod.boolean(),
+  "articleId": zod.string()
+})
+
+
+/**
+ * @summary Remove bookmark from a news article
+ */
+export const UnbookmarkArticleParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UnbookmarkArticleResponse = zod.object({
+  "bookmarked": zod.boolean(),
+  "articleId": zod.string()
 })
 
 
@@ -687,6 +795,35 @@ export const UpdateProfileBody = zod.object({
 })
 
 export const UpdateProfileResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "username": zod.string(),
+  "avatar": zod.string(),
+  "country": zod.string(),
+  "totalPoints": zod.number(),
+  "globalRank": zod.number(),
+  "totalPredictions": zod.number(),
+  "accuracy": zod.number(),
+  "joinedAt": zod.coerce.date(),
+  "level": zod.string(),
+  "badgeCount": zod.number()
+})
+
+
+/**
+ * @summary Complete profile setup (set display name after first login)
+ */
+export const setupProfileBodyDisplayNameMin = 2;
+export const setupProfileBodyDisplayNameMax = 50;
+
+
+
+export const SetupProfileBody = zod.object({
+  "displayName": zod.string().min(setupProfileBodyDisplayNameMin).max(setupProfileBodyDisplayNameMax),
+  "username": zod.string().optional()
+})
+
+export const SetupProfileResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "username": zod.string(),
@@ -1183,7 +1320,10 @@ export const GetCurrentAuthUserResponse = zod.object({
   "email": zod.string().nullable(),
   "firstName": zod.string().nullable(),
   "lastName": zod.string().nullable(),
-  "profileImageUrl": zod.string().nullable()
+  "profileImageUrl": zod.string().nullable(),
+  "role": zod.enum(['user', 'admin']),
+  "displayName": zod.string().nullable(),
+  "isProfileComplete": zod.boolean()
 }),zod.null()])
 })
 

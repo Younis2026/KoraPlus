@@ -7,5 +7,6 @@ export * from "./group_leagues";
 export * from "./admin_matches";
 export * from "./admin_match_events";
 export * from "./admin_articles";
+export * from "./article_bookmarks";
 export * from "./prediction_configs";
 export * from "./point_adjustments";

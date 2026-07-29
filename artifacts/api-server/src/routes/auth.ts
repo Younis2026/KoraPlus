@@ -3,6 +3,8 @@ import {
   ExchangeMobileAuthorizationCodeResponse,
   GetCurrentAuthUserResponse,
   LogoutMobileSessionResponse,
+  SetupProfileBody,
+  SetupProfileResponse,
 } from '@workspace/api-zod';
 import { db, usersTable } from '@workspace/db';
 import { eq } from 'drizzle-orm';
@@ -162,6 +164,48 @@ router.get('/auth/user', (req: Request, res: Response) => {
   );
 });
 
+router.patch('/profile/setup', async (req: Request, res: Response): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: 'يجب تسجيل الدخول أولاً' });
+    return;
+  }
+  const parsed = SetupProfileBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'بيانات غير صحيحة' });
+    return;
+  }
+  const userId = parseInt(req.user.id, 10);
+  const updateData: Record<string, unknown> = {
+    name: parsed.data.displayName,
+    isProfileComplete: true,
+    updatedAt: new Date(),
+  };
+  if (parsed.data.username) {
+    updateData.username = parsed.data.username;
+  }
+  const [updated] = await db
+    .update(usersTable)
+    .set(updateData)
+    .where(eq(usersTable.id, userId))
+    .returning();
+  res.json(
+    SetupProfileResponse.parse({
+      id: String(updated.id),
+      name: updated.name,
+      username: updated.username,
+      avatar: updated.avatar,
+      country: updated.country,
+      totalPoints: updated.totalPoints,
+      globalRank: updated.globalRank,
+      totalPredictions: updated.totalPredictions,
+      accuracy: updated.accuracy,
+      joinedAt: updated.createdAt.toISOString(),
+      level: updated.level,
+      badgeCount: updated.badgeCount,
+    }),
+  );
+});
+
 router.get('/login', async (req: Request, res: Response) => {
   const config = await getOidcConfig();
   const callbackUrl = `${getOrigin(req)}/api/callback`;
@@ -246,6 +290,9 @@ router.get('/callback', async (req: Request, res: Response) => {
       firstName: dbUser.firstName ?? null,
       lastName: dbUser.lastName ?? null,
       profileImageUrl: dbUser.avatar || null,
+      role: (dbUser.role ?? 'user') as 'user' | 'admin',
+      displayName: dbUser.name ?? null,
+      isProfileComplete: dbUser.isProfileComplete ?? false,
     },
     access_token: tokens.access_token,
     refresh_token: tokens.refresh_token,
@@ -318,6 +365,9 @@ router.post(
           firstName: dbUser.firstName ?? null,
           lastName: dbUser.lastName ?? null,
           profileImageUrl: dbUser.avatar || null,
+          role: (dbUser.role ?? 'user') as 'user' | 'admin',
+          displayName: dbUser.name ?? null,
+          isProfileComplete: dbUser.isProfileComplete ?? false,
         },
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,

@@ -5,6 +5,8 @@ import {
   useGetLeaderboard,
   useListRewards,
   useCreatePrediction,
+  useUpdatePrediction,
+  useDeletePrediction,
   PredictionMatch,
   Prediction,
   LeaderboardEntry,
@@ -26,6 +28,16 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { formatDate } from '@/lib/utils';
 import { Link } from 'wouter';
 import {
@@ -36,11 +48,14 @@ import {
   Clock,
   CheckCircle2,
   LogIn,
+  Pencil,
+  Trash2,
+  Lock,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppAuth } from '@/components/auth-provider';
 
-// ─── Prediction Dialog ────────────────────────────────────────────────────────
+// ─── Prediction Dialog (Create) ───────────────────────────────────────────────
 
 interface PredictionDialogProps {
   pm: PredictionMatch | null;
@@ -52,7 +67,6 @@ function PredictionDialog({ pm, onClose }: PredictionDialogProps) {
   const { mutate: createPrediction, isPending } = useCreatePrediction({
     mutation: {
       onSuccess: () => {
-        // Refresh available predictions so hasPredicted updates
         queryClient.invalidateQueries();
         setSubmitted(true);
       },
@@ -132,109 +146,143 @@ function PredictionDialog({ pm, onClose }: PredictionDialogProps) {
               </DialogDescription>
             </DialogHeader>
 
-            {/* Teams */}
             <div className="flex items-center justify-between gap-2 py-3 border-y border-border/50">
               <div className="flex flex-col items-center gap-1 w-[40%]">
                 <TeamLogo name={match.homeTeam.name} className="w-12 h-12" />
-                <span className="text-xs font-bold text-center leading-tight">
-                  {match.homeTeam.name}
-                </span>
+                <span className="text-xs font-bold text-center leading-tight">{match.homeTeam.name}</span>
               </div>
               <span className="text-muted-foreground text-sm font-bold">VS</span>
               <div className="flex flex-col items-center gap-1 w-[40%]">
                 <TeamLogo name={match.awayTeam.name} className="w-12 h-12" />
-                <span className="text-xs font-bold text-center leading-tight">
-                  {match.awayTeam.name}
-                </span>
+                <span className="text-xs font-bold text-center leading-tight">{match.awayTeam.name}</span>
               </div>
             </div>
 
-            {/* Quick-pick buttons */}
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground font-bold text-center">اختر النتيجة بسرعة</p>
               <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => quickPick(1, 0)}
-                  className={`py-2 rounded-lg border text-xs font-bold transition-colors ${
-                    homeGoals === '1' && awayGoals === '0'
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'border-border hover:border-primary/50 hover:bg-muted'
-                  }`}
-                >
-                  فوز المضيف
-                </button>
-                <button
-                  onClick={() => quickPick(0, 0)}
-                  className={`py-2 rounded-lg border text-xs font-bold transition-colors ${
-                    homeGoals === '0' && awayGoals === '0'
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'border-border hover:border-primary/50 hover:bg-muted'
-                  }`}
-                >
-                  تعادل
-                </button>
-                <button
-                  onClick={() => quickPick(0, 1)}
-                  className={`py-2 rounded-lg border text-xs font-bold transition-colors ${
-                    homeGoals === '0' && awayGoals === '1'
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'border-border hover:border-primary/50 hover:bg-muted'
-                  }`}
-                >
-                  فوز الضيف
-                </button>
+                {[{ label: 'فوز المضيف', h: 1, a: 0 }, { label: 'تعادل', h: 0, a: 0 }, { label: 'فوز الضيف', h: 0, a: 1 }].map(({ label, h, a }) => (
+                  <button
+                    key={label}
+                    onClick={() => quickPick(h, a)}
+                    className={`py-2 rounded-lg border text-xs font-bold transition-colors ${
+                      homeGoals === String(h) && awayGoals === String(a)
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'border-border hover:border-primary/50 hover:bg-muted'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Exact score inputs */}
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground font-bold text-center">
                 أو أدخل النتيجة الدقيقة (+100 نقطة)
               </p>
               <div className="flex items-center gap-3">
-                <Input
-                  type="number"
-                  min={0}
-                  max={20}
-                  placeholder="0"
-                  value={homeGoals}
+                <Input type="number" min={0} max={20} placeholder="0" value={homeGoals}
                   onChange={(e) => { setHomeGoals(e.target.value); setErrorMsg(null); }}
-                  className="text-center text-xl font-black h-12"
-                />
+                  className="text-center text-xl font-black h-12" />
                 <span className="text-muted-foreground font-bold shrink-0">—</span>
-                <Input
-                  type="number"
-                  min={0}
-                  max={20}
-                  placeholder="0"
-                  value={awayGoals}
+                <Input type="number" min={0} max={20} placeholder="0" value={awayGoals}
                   onChange={(e) => { setAwayGoals(e.target.value); setErrorMsg(null); }}
-                  className="text-center text-xl font-black h-12"
-                />
+                  className="text-center text-xl font-black h-12" />
               </div>
             </div>
 
             {errorMsg && (
-              <p className="text-xs text-destructive text-center font-bold">
-                {errorMsg}
-              </p>
+              <p className="text-xs text-destructive text-center font-bold">{errorMsg}</p>
             )}
 
-            {/* Points badge */}
             <div className="flex items-center justify-center gap-1 text-xs text-secondary font-bold">
               <Gift className="w-4 h-4" />
               <span>تكسب حتى {pm.pointsAvailable} نقطة</span>
             </div>
 
-            <Button
-              className="w-full font-black text-base h-12 rounded-xl"
-              onClick={handleSubmit}
-              disabled={isPending}
-            >
+            <Button className="w-full font-black text-base h-12 rounded-xl" onClick={handleSubmit} disabled={isPending}>
               {isPending ? 'جاري الحفظ...' : 'تأكيد التوقع'}
             </Button>
           </>
         )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Edit Prediction Dialog ────────────────────────────────────────────────────
+
+interface EditPredictionDialogProps {
+  prediction: Prediction | null;
+  onClose: () => void;
+}
+
+function EditPredictionDialog({ prediction, onClose }: EditPredictionDialogProps) {
+  const queryClient = useQueryClient();
+  const { mutate: updatePrediction, isPending } = useUpdatePrediction({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries();
+        onClose();
+      },
+      onError: (err: unknown) => {
+        const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+          ?? 'حدث خطأ، يرجى المحاولة مرة أخرى';
+        setErrorMsg(msg);
+      },
+    },
+  });
+
+  const [homeGoals, setHomeGoals] = useState(String(prediction?.homeScorePrediction ?? ''));
+  const [awayGoals, setAwayGoals] = useState(String(prediction?.awayScorePrediction ?? ''));
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  if (!prediction) return null;
+
+  function handleSubmit() {
+    if (!prediction) return;
+    setErrorMsg(null);
+    const homeNum = homeGoals !== '' ? parseInt(homeGoals, 10) : null;
+    const awayNum = awayGoals !== '' ? parseInt(awayGoals, 10) : null;
+    if (homeNum === null || awayNum === null || isNaN(homeNum) || isNaN(awayNum)) {
+      setErrorMsg('يرجى إدخال أرقام صحيحة');
+      return;
+    }
+    updatePrediction({
+      id: prediction.id,
+      data: { homeScorePrediction: homeNum, awayScorePrediction: awayNum },
+    });
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-sm mx-auto rounded-2xl border-primary/20 bg-card text-card-foreground" dir="rtl">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="text-base font-black text-center">تعديل التوقع</DialogTitle>
+          <DialogDescription className="text-center text-xs text-muted-foreground">
+            {prediction.match.homeTeam.name} ضد {prediction.match.awayTeam.name}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground font-bold text-center">النتيجة المتوقعة</p>
+          <div className="flex items-center gap-3">
+            <Input type="number" min={0} max={20} placeholder="0" value={homeGoals}
+              onChange={(e) => { setHomeGoals(e.target.value); setErrorMsg(null); }}
+              className="text-center text-xl font-black h-12" />
+            <span className="text-muted-foreground font-bold shrink-0">—</span>
+            <Input type="number" min={0} max={20} placeholder="0" value={awayGoals}
+              onChange={(e) => { setAwayGoals(e.target.value); setErrorMsg(null); }}
+              className="text-center text-xl font-black h-12" />
+          </div>
+        </div>
+
+        {errorMsg && <p className="text-xs text-destructive text-center font-bold">{errorMsg}</p>}
+
+        <Button className="w-full font-black h-12 rounded-xl" onClick={handleSubmit} disabled={isPending}>
+          {isPending ? 'جاري التعديل...' : 'حفظ التعديل'}
+        </Button>
       </DialogContent>
     </Dialog>
   );
@@ -292,19 +340,11 @@ function AvailablePredictions() {
   if (isLoading) return <LoadingList />;
 
   if (!matches || matches.length === 0) {
-    return (
-      <EmptyState
-        icon={<Clock />}
-        text="لا توجد مباريات متاحة للتوقع حالياً"
-      />
-    );
+    return <EmptyState icon={<Clock />} text="لا توجد مباريات متاحة للتوقع حالياً" />;
   }
 
   function handlePredictClick(pm: PredictionMatch) {
-    if (!isAuthenticated) {
-      login();
-      return;
-    }
+    if (!isAuthenticated) { login(); return; }
     setActivePm(pm);
   }
 
@@ -330,7 +370,6 @@ function AvailablePredictions() {
                     <TeamLogo name={pm.match.homeTeam.name} className="w-14 h-14 shadow-md" />
                     <span className="font-bold text-sm text-center">{pm.match.homeTeam.name}</span>
                   </div>
-
                   <div className="flex-1 flex flex-col items-center gap-2">
                     <div className="text-xs text-muted-foreground font-bold bg-background px-3 py-1 rounded-full border shadow-sm">
                       {formatDate(pm.match.scheduledAt)}
@@ -339,7 +378,6 @@ function AvailablePredictions() {
                       يغلق: {formatDate(pm.closesAt)}
                     </span>
                   </div>
-
                   <div className="flex flex-col items-center gap-2 w-[40%]">
                     <TeamLogo name={pm.match.awayTeam.name} className="w-14 h-14 shadow-md" />
                     <span className="font-bold text-sm text-center">{pm.match.awayTeam.name}</span>
@@ -357,13 +395,9 @@ function AvailablePredictions() {
                     variant={pm.hasPredicted ? 'secondary' : 'default'}
                   >
                     {pm.hasPredicted ? (
-                      <span className="flex items-center gap-1">
-                        <CheckCircle2 className="w-4 h-4" /> تم التوقع
-                      </span>
+                      <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4" /> تم التوقع</span>
                     ) : !isAuthenticated ? (
-                      <span className="flex items-center gap-1">
-                        <LogIn className="w-4 h-4" /> سجّل للتوقع
-                      </span>
+                      <span className="flex items-center gap-1"><LogIn className="w-4 h-4" /> سجّل للتوقع</span>
                     ) : (
                       'توقع الآن'
                     )}
@@ -388,10 +422,19 @@ function AvailablePredictions() {
 
 function MyPredictions() {
   const { isAuthenticated, login } = useAppAuth();
+  const queryClient = useQueryClient();
   const { data: predictions, isLoading } = useListMyPredictions(
     undefined,
     { query: { enabled: isAuthenticated } as never },
   );
+  const { mutate: deletePrediction } = useDeletePrediction({
+    mutation: {
+      onSuccess: () => queryClient.invalidateQueries(),
+    },
+  });
+
+  const [editTarget, setEditTarget] = useState<Prediction | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   if (!isAuthenticated) {
     return (
@@ -406,76 +449,138 @@ function MyPredictions() {
   }
 
   if (isLoading) return <LoadingList />;
-
   if (!predictions || predictions.length === 0) {
     return <EmptyState icon={<Target />} text="لم تقم بأي توقعات بعد" />;
   }
 
   return (
-    <div className="space-y-4">
-      {predictions.map((p, i) => (
-        <motion.div
-          key={p.id}
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: i * 0.1 }}
-        >
-          <Card
-            className={
-              p.status === 'won'
-                ? 'border-primary'
-                : p.status === 'lost'
-                  ? 'border-destructive/50 opacity-70'
-                  : ''
-            }
-          >
-            <CardContent className="p-4">
-              <div className="flex justify-between items-center border-b border-border/50 pb-3 mb-3">
-                <span className="text-xs font-bold text-muted-foreground">
-                  {formatDate(p.match.scheduledAt)}
-                </span>
-                <Badge
-                  variant={
-                    p.status === 'won'
-                      ? 'default'
-                      : p.status === 'lost'
-                        ? 'destructive'
-                        : 'secondary'
-                  }
-                >
-                  {p.status === 'won'
-                    ? 'فوز'
-                    : p.status === 'lost'
-                      ? 'خسارة'
-                      : p.status === 'partial'
-                        ? 'جزئي'
-                        : 'قيد الانتظار'}
-                </Badge>
-              </div>
+    <>
+      <div className="space-y-4">
+        {predictions.map((p, i) => {
+          // canEdit comes from the API response (before deadline)
+          const canEdit = (p as Prediction & { canEdit?: boolean }).canEdit ?? false;
 
-              <div className="flex items-center justify-between">
-                <span className="font-bold w-[35%] truncate">{p.match.homeTeam.name}</span>
-                <div className="flex-1 flex justify-center gap-4 text-2xl font-black tabular-nums">
-                  <span className="text-primary">{p.homeScorePrediction ?? '—'}</span>
-                  <span className="text-muted-foreground/30">-</span>
-                  <span className="text-primary">{p.awayScorePrediction ?? '—'}</span>
-                </div>
-                <span className="font-bold w-[35%] truncate text-left">{p.match.awayTeam.name}</span>
-              </div>
+          return (
+            <motion.div
+              key={p.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.1 }}
+            >
+              <Card className={
+                p.status === 'won'
+                  ? 'border-primary'
+                  : p.status === 'lost'
+                    ? 'border-destructive/50 opacity-70'
+                    : ''
+              }>
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-center border-b border-border/50 pb-3 mb-3">
+                    <span className="text-xs font-bold text-muted-foreground">
+                      {formatDate(p.match.scheduledAt)}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {!canEdit && p.status === 'pending' && (
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Lock className="w-3 h-3" /> مغلق
+                        </span>
+                      )}
+                      <Badge
+                        variant={p.status === 'won' ? 'default' : p.status === 'lost' ? 'destructive' : 'secondary'}
+                      >
+                        {p.status === 'won' ? 'فوز' : p.status === 'lost' ? 'خسارة' : p.status === 'partial' ? 'جزئي' : 'قيد الانتظار'}
+                      </Badge>
+                    </div>
+                  </div>
 
-              {p.pointsEarned != null && (
-                <div className="mt-4 pt-3 border-t border-border/50 flex justify-center">
-                  <span className="text-sm font-bold text-secondary flex items-center gap-1">
-                    <Trophy className="w-4 h-4" />
-                    كسبت {p.pointsEarned} نقطة
-                  </span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-      ))}
-    </div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold w-[35%] truncate">{p.match.homeTeam.name}</span>
+                    <div className="flex-1 flex justify-center gap-4 text-2xl font-black tabular-nums">
+                      <span className="text-primary">{p.homeScorePrediction ?? '—'}</span>
+                      <span className="text-muted-foreground/30">-</span>
+                      <span className="text-primary">{p.awayScorePrediction ?? '—'}</span>
+                    </div>
+                    <span className="font-bold w-[35%] truncate text-left">{p.match.awayTeam.name}</span>
+                  </div>
+
+                  {p.pointsEarned != null && (
+                    <div className="mt-4 pt-3 border-t border-border/50 flex justify-center">
+                      <span className="text-sm font-bold text-secondary flex items-center gap-1">
+                        <Trophy className="w-4 h-4" /> كسبت {p.pointsEarned} نقطة
+                      </span>
+                    </div>
+                  )}
+
+                  {canEdit && p.status === 'pending' && (
+                    <div className="mt-3 pt-3 border-t border-border/50 flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 gap-1 text-xs"
+                        onClick={() => setEditTarget(p)}
+                      >
+                        <Pencil className="w-3 h-3" /> تعديل
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 gap-1 text-xs text-destructive hover:text-destructive border-destructive/30 hover:border-destructive/60"
+                        onClick={() => setDeleteTarget(p.id)}
+                      >
+                        <Trash2 className="w-3 h-3" /> حذف
+                      </Button>
+                    </div>
+                  )}
+
+                  {!canEdit && p.status === 'pending' && (
+                    <p className="mt-3 pt-3 border-t border-border/50 text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
+                      <Lock className="w-3 h-3" />
+                      التوقعات مغلقة قبل 5 دقائق من بدء المباراة
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {/* Edit Dialog */}
+      <AnimatePresence>
+        {editTarget && (
+          <EditPredictionDialog
+            prediction={editTarget}
+            onClose={() => setEditTarget(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirm Dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>حذف التوقع</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من حذف هذا التوقع؟ لا يمكن التراجع عن هذا الإجراء.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse">
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90 text-white"
+              onClick={() => {
+                if (deleteTarget) {
+                  deletePrediction({ id: deleteTarget });
+                  setDeleteTarget(null);
+                }
+              }}
+            >
+              حذف
+            </AlertDialogAction>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -488,12 +593,7 @@ function Leaderboard() {
   if (!leaderboard) return null;
 
   if (leaderboard.entries.length === 0) {
-    return (
-      <EmptyState
-        icon={<Trophy />}
-        text="لا يوجد لاعبون في الترتيب بعد. كن أول من يتوقع!"
-      />
-    );
+    return <EmptyState icon={<Trophy />} text="لا يوجد لاعبون في الترتيب بعد. كن أول من يتوقع!" />;
   }
 
   return (
@@ -512,25 +612,16 @@ function Leaderboard() {
               i < 3 ? 'bg-gradient-to-r from-secondary/5 to-transparent' : ''
             }`}
           >
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
-                i === 0
-                  ? 'bg-secondary text-secondary-foreground shadow-[0_0_10px_rgba(250,204,21,0.5)]'
-                  : i === 1
-                    ? 'bg-slate-300 text-slate-800'
-                    : i === 2
-                      ? 'bg-amber-700/80 text-white'
-                      : 'text-muted-foreground bg-muted'
-              }`}
-            >
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
+              i === 0 ? 'bg-secondary text-secondary-foreground shadow-[0_0_10px_rgba(250,204,21,0.5)]'
+                : i === 1 ? 'bg-slate-300 text-slate-800'
+                : i === 2 ? 'bg-amber-700/80 text-white'
+                : 'text-muted-foreground bg-muted'
+            }`}>
               {entry.rank}
             </div>
             <div className="w-10 h-10 rounded-full bg-muted overflow-hidden shrink-0">
-              <img
-                src={entry.user.avatar || undefined}
-                alt={entry.user.name}
-                className="w-full h-full object-cover"
-              />
+              <img src={entry.user.avatar || undefined} alt={entry.user.name} className="w-full h-full object-cover" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-bold truncate">{entry.user.name}</p>
@@ -556,8 +647,7 @@ function Rewards() {
   const { data: rewards, isLoading } = useListRewards();
 
   if (isLoading) return <LoadingList />;
-  if (!rewards || rewards.length === 0)
-    return <EmptyState icon={<Gift />} text="لا توجد جوائز متاحة حالياً" />;
+  if (!rewards || rewards.length === 0) return <EmptyState icon={<Gift />} text="لا توجد جوائز متاحة حالياً" />;
 
   return (
     <div className="space-y-4">
@@ -573,15 +663,9 @@ function Rewards() {
               {reward.type === 'weekly' ? 'أسبوعي' : 'شهري'}
             </div>
             <div className="h-32 w-full relative">
-              <img
-                src={reward.imageUrl || undefined}
-                alt={reward.title}
-                className="w-full h-full object-cover"
-              />
+              <img src={reward.imageUrl || undefined} alt={reward.title} className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent"></div>
-              <h3 className="absolute bottom-2 right-4 font-black text-xl text-white drop-shadow-md">
-                {reward.title}
-              </h3>
+              <h3 className="absolute bottom-2 right-4 font-black text-xl text-white drop-shadow-md">{reward.title}</h3>
             </div>
             <CardContent className="p-4 space-y-4">
               <p className="text-sm text-muted-foreground">{reward.description}</p>
@@ -605,9 +689,7 @@ function Rewards() {
 function LoadingList() {
   return (
     <div className="space-y-4">
-      {[1, 2, 3].map((i) => (
-        <Skeleton key={i} className="h-32 w-full rounded-xl" />
-      ))}
+      {[1, 2, 3].map((i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}
     </div>
   );
 }
