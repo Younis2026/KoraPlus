@@ -1170,3 +1170,288 @@ export const GetAdminStatsResponse = zod.object({
 })
 
 
+/**
+ * @summary Get the currently authenticated user
+ */
+export const GetCurrentAuthUserHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+export const GetCurrentAuthUserResponse = zod.object({
+  "user": zod.union([zod.object({
+  "id": zod.string(),
+  "email": zod.string().nullable(),
+  "firstName": zod.string().nullable(),
+  "lastName": zod.string().nullable(),
+  "profileImageUrl": zod.string().nullable()
+}),zod.null()])
+})
+
+
+/**
+ * @summary Start the browser OIDC login flow
+ */
+export const BeginBrowserLoginQueryParams = zod.object({
+  "returnTo": zod.coerce.string().optional()
+})
+
+export const BeginBrowserLoginResponse = zod.void()
+
+
+/**
+ * @summary Complete the browser OIDC login flow
+ */
+export const HandleBrowserLoginCallbackQueryParams = zod.object({
+  "code": zod.coerce.string().optional(),
+  "state": zod.coerce.string().optional()
+})
+
+export const HandleBrowserLoginCallbackResponse = zod.void()
+
+
+/**
+ * @summary Clear the session and begin OIDC logout
+ */
+export const logoutBrowserSessionQueryReturnToDefault = `/`;
+
+export const LogoutBrowserSessionQueryParams = zod.object({
+  "returnTo": zod.coerce.string().default(logoutBrowserSessionQueryReturnToDefault)
+})
+
+export const LogoutBrowserSessionHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+export const LogoutBrowserSessionResponse = zod.void()
+
+
+/**
+ * @summary Exchange a mobile OIDC code for a session token
+ */
+
+
+
+
+
+
+
+export const ExchangeMobileAuthorizationCodeBody = zod.object({
+  "code": zod.string().min(1),
+  "code_verifier": zod.string().min(1),
+  "redirect_uri": zod.string().min(1),
+  "state": zod.string().min(1),
+  "nonce": zod.string().min(1).optional()
+})
+
+export const ExchangeMobileAuthorizationCodeResponse = zod.object({
+  "token": zod.string()
+})
+
+
+/**
+ * @summary Delete a mobile session token
+ */
+export const LogoutMobileSessionHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+export const LogoutMobileSessionResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Get leaderboard for users you follow
+ */
+export const GetFriendsLeaderboardHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+export const GetFriendsLeaderboardResponse = zod.object({
+  "entries": zod.array(zod.object({
+  "rank": zod.number(),
+  "user": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "avatar": zod.string(),
+  "country": zod.string()
+}),
+  "points": zod.number(),
+  "predictions": zod.number(),
+  "accuracy": zod.number(),
+  "change": zod.number()
+})),
+  "total": zod.number(),
+  "userEntry": zod.object({
+  "rank": zod.number(),
+  "user": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "avatar": zod.string(),
+  "country": zod.string()
+}),
+  "points": zod.number(),
+  "predictions": zod.number(),
+  "accuracy": zod.number(),
+  "change": zod.number()
+})
+})
+
+
+/**
+ * @summary Search users by name or username
+ */
+
+
+
+export const SearchUsersQueryParams = zod.object({
+  "q": zod.coerce.string().min(1)
+})
+
+export const SearchUsersHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+export const SearchUsersResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "username": zod.string(),
+  "avatar": zod.string(),
+  "totalPoints": zod.number(),
+  "globalRank": zod.number(),
+  "isFollowing": zod.boolean()
+})
+export const SearchUsersResponse = zod.array(SearchUsersResponseItem)
+
+
+/**
+ * @summary Follow a user
+ */
+export const FollowUserParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const FollowUserHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+export const FollowUserResponse = zod.object({
+  "following": zod.boolean(),
+  "userId": zod.string()
+})
+
+
+/**
+ * @summary Unfollow a user
+ */
+export const UnfollowUserParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const UnfollowUserHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+export const UnfollowUserResponse = zod.object({
+  "following": zod.boolean(),
+  "userId": zod.string()
+})
+
+
+/**
+ * @summary List group leagues the current user belongs to
+ */
+export const ListMyGroupsHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+export const ListMyGroupsResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "inviteCode": zod.string(),
+  "memberCount": zod.number(),
+  "createdAt": zod.coerce.date()
+})
+export const ListMyGroupsResponse = zod.array(ListMyGroupsResponseItem)
+
+
+/**
+ * @summary Create a new private group league
+ */
+export const CreateGroupHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+export const createGroupBodyNameMax = 60;
+
+
+
+export const CreateGroupBody = zod.object({
+  "name": zod.string().min(1).max(createGroupBodyNameMax)
+})
+
+export const CreateGroupResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "inviteCode": zod.string(),
+  "memberCount": zod.number(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Join a group league using an invite code
+ */
+export const JoinGroupHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+
+
+
+export const JoinGroupBody = zod.object({
+  "inviteCode": zod.string().min(1)
+})
+
+export const JoinGroupResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "inviteCode": zod.string(),
+  "memberCount": zod.number(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get group details and leaderboard
+ */
+export const GetGroupLeaderboardParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetGroupLeaderboardHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+export const GetGroupLeaderboardResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "inviteCode": zod.string(),
+  "memberCount": zod.number(),
+  "createdAt": zod.coerce.date(),
+  "entries": zod.array(zod.object({
+  "rank": zod.number(),
+  "user": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "avatar": zod.string(),
+  "country": zod.string()
+}),
+  "points": zod.number(),
+  "predictions": zod.number(),
+  "accuracy": zod.number(),
+  "change": zod.number()
+}))
+})
+
+

@@ -17,6 +17,10 @@ tags:
   - name: profile
   - name: leagues
   - name: admin
+  - name: auth
+    description: Browser and mobile authentication endpoints.
+  - name: social
+    description: Friends, groups and social features.
 
 paths:
   /healthz:
@@ -742,7 +746,326 @@ paths:
               schema:
                 $ref: "#/components/schemas/AdminStats"
 
+  # ─── Auth endpoints ───────────────────────────────────────────────────────────
+
+  /auth/user:
+    get:
+      tags: [auth]
+      operationId: getCurrentAuthUser
+      summary: Get the currently authenticated user
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/SessionCookie'
+      responses:
+        '200':
+          description: Auth status resolved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthUserEnvelope'
+
+  /login:
+    get:
+      tags: [auth]
+      operationId: beginBrowserLogin
+      summary: Start the browser OIDC login flow
+      parameters:
+        - name: returnTo
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to the OIDC authorization endpoint.
+
+  /callback:
+    get:
+      tags: [auth]
+      operationId: handleBrowserLoginCallback
+      summary: Complete the browser OIDC login flow
+      parameters:
+        - name: code
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to the returnTo path on success or /api/login on failure.
+
+  /logout:
+    get:
+      tags: [auth]
+      operationId: logoutBrowserSession
+      summary: Clear the session and begin OIDC logout
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/SessionCookie'
+        - name: returnTo
+          in: query
+          required: false
+          schema:
+            type: string
+            default: /
+      responses:
+        '302':
+          description: Redirect to the OIDC provider logout URL.
+
+  /mobile-auth/token-exchange:
+    post:
+      tags: [auth]
+      operationId: exchangeMobileAuthorizationCode
+      summary: Exchange a mobile OIDC code for a session token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MobileTokenExchangeRequest'
+      responses:
+        '200':
+          description: Session created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileTokenExchangeSuccess'
+        '400':
+          description: Missing or invalid required fields.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: Token did not contain usable claims.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Token exchange failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+  /mobile-auth/logout:
+    post:
+      tags: [auth]
+      operationId: logoutMobileSession
+      summary: Delete a mobile session token
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+      responses:
+        '200':
+          description: Logout processed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutSuccess'
+
+  # ─── Social endpoints ─────────────────────────────────────────────────────────
+
+  /leaderboard/friends:
+    get:
+      tags: [social]
+      operationId: getFriendsLeaderboard
+      summary: Get leaderboard for users you follow
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/SessionCookie'
+      responses:
+        '200':
+          description: Friends leaderboard entries.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaderboardPage'
+        '401':
+          description: Not authenticated.
+
+  /social/search:
+    get:
+      tags: [social]
+      operationId: searchUsers
+      summary: Search users by name or username
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/SessionCookie'
+      responses:
+        '200':
+          description: Matching users.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserSearchEntry'
+
+  /social/friends/{userId}:
+    post:
+      tags: [social]
+      operationId: followUser
+      summary: Follow a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/SessionCookie'
+      responses:
+        '200':
+          description: Now following.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowResult'
+        '401':
+          description: Not authenticated.
+    delete:
+      tags: [social]
+      operationId: unfollowUser
+      summary: Unfollow a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/SessionCookie'
+      responses:
+        '200':
+          description: Unfollowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowResult'
+        '401':
+          description: Not authenticated.
+
+  /social/groups:
+    get:
+      tags: [social]
+      operationId: listMyGroups
+      summary: List group leagues the current user belongs to
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/SessionCookie'
+      responses:
+        '200':
+          description: My group leagues.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupLeague'
+        '401':
+          description: Not authenticated.
+    post:
+      tags: [social]
+      operationId: createGroup
+      summary: Create a new private group league
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/SessionCookie'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupLeagueInput'
+      responses:
+        '201':
+          description: Group created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupLeague'
+        '401':
+          description: Not authenticated.
+
+  /social/groups/join:
+    post:
+      tags: [social]
+      operationId: joinGroup
+      summary: Join a group league using an invite code
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/SessionCookie'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinGroupInput'
+      responses:
+        '200':
+          description: Joined group.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupLeague'
+        '400':
+          description: Invalid invite code.
+        '401':
+          description: Not authenticated.
+
+  /social/groups/{id}:
+    get:
+      tags: [social]
+      operationId: getGroupLeaderboard
+      summary: Get group details and leaderboard
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/SessionCookie'
+      responses:
+        '200':
+          description: Group leaderboard.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupLeagueDetail'
+        '401':
+          description: Not authenticated.
+        '404':
+          description: Group not found.
+
 components:
+  parameters:
+    AuthorizationSessionHeader:
+      name: Authorization
+      in: header
+      required: false
+      description: Opaque session token — `Bearer <sid>`.
+      schema:
+        type: string
+    SessionCookie:
+      name: sid
+      in: cookie
+      required: false
+      description: Browser session cookie.
+      schema:
+        type: string
   schemas:
     HealthStatus:
       type: object
@@ -1682,3 +2005,154 @@ components:
         activeThisWeek:
           type: integer
       required: [totalMatches, liveMatches, upcomingMatches, finishedMatches, totalArticles, breakingNewsCount, totalPredictions, pendingSettlements, totalUsers, activeThisWeek]
+
+    # ─── Auth schemas ─────────────────────────────────────────────────────────
+
+    AuthUser:
+      type: object
+      required: [id, email, firstName, lastName, profileImageUrl]
+      properties:
+        id:
+          type: string
+        email:
+          type: [string, 'null']
+        firstName:
+          type: [string, 'null']
+        lastName:
+          type: [string, 'null']
+        profileImageUrl:
+          type: [string, 'null']
+
+    AuthUserEnvelope:
+      type: object
+      required: [user]
+      properties:
+        user:
+          oneOf:
+            - $ref: '#/components/schemas/AuthUser'
+            - type: 'null'
+
+    MobileTokenExchangeRequest:
+      type: object
+      required: [code, code_verifier, redirect_uri, state]
+      properties:
+        code:
+          type: string
+          minLength: 1
+        code_verifier:
+          type: string
+          minLength: 1
+        redirect_uri:
+          type: string
+          minLength: 1
+        state:
+          type: string
+          minLength: 1
+        nonce:
+          type: string
+          minLength: 1
+
+    MobileTokenExchangeSuccess:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+
+    LogoutSuccess:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+          const: true
+
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    # ─── Social schemas ────────────────────────────────────────────────────────
+
+    UserSearchEntry:
+      type: object
+      required: [id, name, username, avatar, totalPoints, globalRank, isFollowing]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        username:
+          type: string
+        avatar:
+          type: string
+        totalPoints:
+          type: integer
+        globalRank:
+          type: integer
+        isFollowing:
+          type: boolean
+
+    FollowResult:
+      type: object
+      required: [following, userId]
+      properties:
+        following:
+          type: boolean
+        userId:
+          type: string
+
+    GroupLeague:
+      type: object
+      required: [id, name, inviteCode, memberCount, createdAt]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        inviteCode:
+          type: string
+        memberCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    GroupLeagueInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+
+    JoinGroupInput:
+      type: object
+      required: [inviteCode]
+      properties:
+        inviteCode:
+          type: string
+          minLength: 1
+
+    GroupLeagueDetail:
+      type: object
+      required: [id, name, inviteCode, memberCount, createdAt, entries]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        inviteCode:
+          type: string
+        memberCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaderboardEntry'

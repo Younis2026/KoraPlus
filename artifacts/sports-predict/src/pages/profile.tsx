@@ -5,21 +5,56 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
-import { Settings, Trophy, Target, Flame, Medal, Shield, Share2, ShieldAlert, ChevronLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Settings, Trophy, Target, Flame, Medal, Shield, Share2, ShieldAlert, ChevronLeft, LogIn, LogOut, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'wouter';
+import { useAppAuth } from '@/components/auth-provider';
 
 export default function ProfilePage() {
-  const { data: profile, isLoading: loadingProfile } = useGetProfile();
-  const { data: stats, isLoading: loadingStats } = useGetProfileStats();
-  const { data: achievements, isLoading: loadingAchievements } = useGetAchievements();
+  const { isAuthenticated, isLoading: authLoading, login, logout, user: authUser } = useAppAuth();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const queryOpts = { enabled: isAuthenticated } as any;
+  const { data: profile, isLoading: loadingProfile } = useGetProfile({ query: queryOpts });
+  const { data: stats, isLoading: loadingStats } = useGetProfileStats({ query: queryOpts });
+  const { data: achievements, isLoading: loadingAchievements } = useGetAchievements({ query: queryOpts });
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return <ProfileSkeleton />;
+  }
+
+  // Show login prompt if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="max-w-md mx-auto p-6 flex flex-col items-center justify-center min-h-[70vh] text-center gap-6">
+        <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center">
+          <User className="w-12 h-12 text-muted-foreground" />
+        </div>
+        <div className="space-y-2">
+          <h1 className="text-2xl font-black">مرحباً بك في توقع بلس!</h1>
+          <p className="text-muted-foreground">سجّل دخولك لمتابعة توقعاتك، مراكزك في الترتيب، وإنجازاتك.</p>
+        </div>
+        <Button size="lg" onClick={login} className="gap-2 w-full max-w-xs">
+          <LogIn className="w-5 h-5" />
+          تسجيل الدخول
+        </Button>
+      </div>
+    );
+  }
 
   if (loadingProfile || loadingStats || loadingAchievements) {
     return <ProfileSkeleton />;
   }
 
-  if (!profile || !stats || !achievements) {
-    return <div className="p-8 text-center text-muted-foreground">حدث خطأ في تحميل البيانات</div>;
+  if (!profile || !stats) {
+    return (
+      <div className="max-w-md mx-auto p-6 text-center space-y-4">
+        <p className="text-muted-foreground">حدث خطأ في تحميل البيانات</p>
+        <Button variant="outline" onClick={() => window.location.reload()}>إعادة المحاولة</Button>
+      </div>
+    );
   }
 
   return (
@@ -30,6 +65,13 @@ export default function ProfilePage() {
         <div className="absolute top-0 right-0 p-4 z-10 flex gap-2">
           <button className="w-8 h-8 rounded-full bg-background/50 backdrop-blur border flex items-center justify-center text-foreground hover:bg-background/80 transition-colors">
             <Share2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={logout}
+            className="w-8 h-8 rounded-full bg-background/50 backdrop-blur border flex items-center justify-center text-foreground hover:bg-background/80 transition-colors"
+            title="تسجيل الخروج"
+          >
+            <LogOut className="w-4 h-4" />
           </button>
           <button className="w-8 h-8 rounded-full bg-background/50 backdrop-blur border flex items-center justify-center text-foreground hover:bg-background/80 transition-colors">
             <Settings className="w-4 h-4" />
@@ -44,8 +86,10 @@ export default function ProfilePage() {
           <div className="flex flex-col md:flex-row items-center md:items-end gap-4 -mt-12 mb-4">
             <div className="relative">
               <Avatar className="w-24 h-24 border-4 border-card shadow-xl">
-                <AvatarImage src={profile.avatar || undefined} />
-                <AvatarFallback className="bg-primary text-primary-foreground text-3xl font-bold">{profile.name.substring(0, 2)}</AvatarFallback>
+                <AvatarImage src={profile.avatar || authUser?.profileImageUrl || undefined} />
+                <AvatarFallback className="bg-primary text-primary-foreground text-3xl font-bold">
+                  {profile.name.substring(0, 2)}
+                </AvatarFallback>
               </Avatar>
               <div className="absolute -bottom-2 -right-2 bg-secondary text-secondary-foreground text-xs font-black px-2 py-0.5 rounded-full border-2 border-card shadow-md">
                 مستوى {profile.level}
@@ -81,53 +125,54 @@ export default function ProfilePage() {
       </div>
 
       {/* Achievements Section */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-secondary" />
-            الإنجازات
-          </h2>
-          <Badge variant="outline">{profile.badgeCount} مفتوح</Badge>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {achievements.map((ach, i) => (
-            <motion.div
-              key={ach.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-            >
-              <Card className={`overflow-hidden h-full ${ach.isUnlocked ? 'bg-card border-primary/20' : 'bg-muted/30 opacity-70 border-dashed'}`}>
-                <CardContent className="p-4 flex gap-4 items-center">
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${
-                    ach.isUnlocked ? 'bg-gradient-to-br from-secondary to-amber-600 shadow-lg shadow-secondary/20 text-white' : 'bg-muted text-muted-foreground'
-                  }`}>
-                    {/* Render icon based on achievement rarity or just a generic one */}
-                    {ach.rarity === 'legendary' ? <Trophy className="w-6 h-6" /> : <Medal className="w-6 h-6" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start mb-1">
-                      <h3 className="font-bold text-sm truncate">{ach.title}</h3>
-                      {ach.isUnlocked && <Badge className="text-[10px] h-4 px-1 shrink-0">مكتمل</Badge>}
+      {achievements && achievements.length > 0 && (
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-secondary" />
+              الإنجازات
+            </h2>
+            <Badge variant="outline">{profile.badgeCount} مفتوح</Badge>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {achievements.map((ach, i) => (
+              <motion.div
+                key={ach.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+              >
+                <Card className={`overflow-hidden h-full ${ach.isUnlocked ? 'bg-card border-primary/20' : 'bg-muted/30 opacity-70 border-dashed'}`}>
+                  <CardContent className="p-4 flex gap-4 items-center">
+                    <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${
+                      ach.isUnlocked ? 'bg-gradient-to-br from-secondary to-amber-600 shadow-lg shadow-secondary/20 text-white' : 'bg-muted text-muted-foreground'
+                    }`}>
+                      {ach.rarity === 'legendary' ? <Trophy className="w-6 h-6" /> : <Medal className="w-6 h-6" />}
                     </div>
-                    <p className="text-xs text-muted-foreground line-clamp-1 mb-2">{ach.description}</p>
-                    {!ach.isUnlocked && (
-                      <div className="space-y-1 mt-2">
-                        <div className="flex justify-between text-[10px] text-muted-foreground">
-                          <span>{ach.progress}</span>
-                          <span>{ach.target}</span>
-                        </div>
-                        <Progress value={(ach.progress / ach.target) * 100} className="h-1.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start mb-1">
+                        <h3 className="font-bold text-sm truncate">{ach.title}</h3>
+                        {ach.isUnlocked && <Badge className="text-[10px] h-4 px-1 shrink-0">مكتمل</Badge>}
                       </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      </section>
+                      <p className="text-xs text-muted-foreground line-clamp-1 mb-2">{ach.description}</p>
+                      {!ach.isUnlocked && (
+                        <div className="space-y-1 mt-2">
+                          <div className="flex justify-between text-[10px] text-muted-foreground">
+                            <span>{ach.progress}</span>
+                            <span>{ach.target}</span>
+                          </div>
+                          <Progress value={(ach.progress / ach.target) * 100} className="h-1.5" />
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Admin Panel Access */}
       <motion.div
@@ -152,17 +197,15 @@ export default function ProfilePage() {
   );
 }
 
-function StatCard({ title, value, icon }: { title: string, value: string | number, icon: React.ReactNode }) {
+function StatCard({ title, value, icon }: { title: string; value: string | number; icon: React.ReactNode }) {
   return (
     <Card>
-      <CardContent className="p-4 flex flex-col items-center justify-center text-center h-full gap-2">
-        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-          {icon}
+      <CardContent className="p-4 flex flex-col gap-2">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: 'w-4 h-4' })}
+          <span className="truncate">{title}</span>
         </div>
-        <div>
-          <p className="text-xl font-black tabular-nums">{value}</p>
-          <p className="text-xs text-muted-foreground">{title}</p>
-        </div>
+        <p className="font-black text-2xl tabular-nums">{value}</p>
       </CardContent>
     </Card>
   );

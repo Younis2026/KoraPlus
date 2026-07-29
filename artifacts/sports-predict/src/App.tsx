@@ -5,12 +5,14 @@ import { Route, Switch, Router as WouterRouter } from 'wouter';
 
 import { Layout } from '@/components/layout';
 import { AdminLayout } from '@/components/admin-layout';
+import { AuthProvider } from '@/components/auth-provider';
 import HomePage from '@/pages/home';
 import MatchesPage from '@/pages/matches';
 import MatchDetailPage from '@/pages/match-detail';
 import PredictionsPage from '@/pages/predictions';
 import NewsPage from '@/pages/news';
 import ProfilePage from '@/pages/profile';
+import LeaderboardPage from '@/pages/leaderboard';
 import NotFound from '@/pages/not-found';
 
 import AdminLoginPage from '@/pages/admin-login';
@@ -49,6 +51,7 @@ function Router() {
             <Route path="/matches/:id" component={MatchDetailPage} />
             <Route path="/predictions" component={PredictionsPage} />
             <Route path="/news" component={NewsPage} />
+            <Route path="/leaderboard" component={LeaderboardPage} />
             <Route path="/profile" component={ProfilePage} />
             <Route component={NotFound} />
           </Switch>
@@ -63,7 +66,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-          <Router />
+          <AuthProvider>
+            <Router />
+          </AuthProvider>
         </WouterRouter>
         <Toaster />
       </TooltipProvider>

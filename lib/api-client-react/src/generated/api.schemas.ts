@@ -733,6 +733,98 @@ export interface AdminStats {
   activeThisWeek: number;
 }
 
+export interface AuthUser {
+  id: string;
+  /** @nullable */
+  email: string | null;
+  /** @nullable */
+  firstName: string | null;
+  /** @nullable */
+  lastName: string | null;
+  /** @nullable */
+  profileImageUrl: string | null;
+}
+
+export interface AuthUserEnvelope {
+  user: AuthUser | null;
+}
+
+export interface MobileTokenExchangeRequest {
+  /** @minLength 1 */
+  code: string;
+  /** @minLength 1 */
+  code_verifier: string;
+  /** @minLength 1 */
+  redirect_uri: string;
+  /** @minLength 1 */
+  state: string;
+  /** @minLength 1 */
+  nonce?: string;
+}
+
+export interface MobileTokenExchangeSuccess {
+  token: string;
+}
+
+export const LogoutSuccessValue = {
+  success: true,
+} as const;
+export type LogoutSuccess = typeof LogoutSuccessValue;
+
+export interface ErrorEnvelope {
+  error: string;
+}
+
+export interface UserSearchEntry {
+  id: string;
+  name: string;
+  username: string;
+  avatar: string;
+  totalPoints: number;
+  globalRank: number;
+  isFollowing: boolean;
+}
+
+export interface FollowResult {
+  following: boolean;
+  userId: string;
+}
+
+export interface GroupLeague {
+  id: string;
+  name: string;
+  inviteCode: string;
+  memberCount: number;
+  createdAt: string;
+}
+
+export interface GroupLeagueInput {
+  /**
+     * @minLength 1
+     * @maxLength 60
+     */
+  name: string;
+}
+
+export interface JoinGroupInput {
+  /** @minLength 1 */
+  inviteCode: string;
+}
+
+export interface GroupLeagueDetail {
+  id: string;
+  name: string;
+  inviteCode: string;
+  memberCount: number;
+  createdAt: string;
+  entries: LeaderboardEntry[];
+}
+
+/**
+ * Opaque session token — `Bearer <sid>`.
+ */
+export type AuthorizationSessionHeaderParameter = string;
+
 export type ListMatchesParams = {
 filter?: ListMatchesFilter;
 /**
@@ -821,4 +913,24 @@ export const ListNewsCategory = {
   video_highlights: 'video_highlights',
   all: 'all',
 } as const;
+
+export type BeginBrowserLoginParams = {
+returnTo?: string;
+};
+
+export type HandleBrowserLoginCallbackParams = {
+code?: string;
+state?: string;
+};
+
+export type LogoutBrowserSessionParams = {
+returnTo?: string;
+};
+
+export type SearchUsersParams = {
+/**
+ * @minLength 1
+ */
+q: string;
+};
 

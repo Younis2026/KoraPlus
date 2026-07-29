@@ -4,16 +4,22 @@ import { z } from "zod/v4";
 
 export const usersTable = pgTable("users", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull().default("محمد الأحمد"),
-  username: text("username").notNull().unique().default("mohammed"),
+  // Auth fields — populated via Replit OIDC upsert
+  replitId: text("replit_id").unique(),
+  email: text("email"),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  // Profile fields
+  name: text("name").notNull().default("لاعب جديد"),
+  username: text("username").notNull().unique().default("player"),
   avatar: text("avatar").notNull().default(""),
   country: text("country").notNull().default("SA"),
-  totalPoints: integer("total_points").notNull().default(1250),
-  globalRank: integer("global_rank").notNull().default(47),
-  totalPredictions: integer("total_predictions").notNull().default(38),
-  accuracy: integer("accuracy").notNull().default(63),
-  level: text("level").notNull().default("محترف"),
-  badgeCount: integer("badge_count").notNull().default(7),
+  totalPoints: integer("total_points").notNull().default(0),
+  globalRank: integer("global_rank").notNull().default(9999),
+  totalPredictions: integer("total_predictions").notNull().default(0),
+  accuracy: integer("accuracy").notNull().default(0),
+  level: text("level").notNull().default("مبتدئ"),
+  badgeCount: integer("badge_count").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

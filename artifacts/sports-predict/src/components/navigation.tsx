@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'wouter';
-import { Home, Trophy, BarChart3, Newspaper, User } from 'lucide-react';
+import { Home, Trophy, BarChart3, User, Medal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function Navigation() {
@@ -10,7 +10,7 @@ export function Navigation() {
     { href: '/', label: 'الرئيسية', icon: Home },
     { href: '/matches', label: 'المباريات', icon: Trophy },
     { href: '/predictions', label: 'التوقعات', icon: BarChart3 },
-    { href: '/news', label: 'الأخبار', icon: Newspaper },
+    { href: '/leaderboard', label: 'الترتيب', icon: Medal },
     { href: '/profile', label: 'حسابي', icon: User },
   ];
 

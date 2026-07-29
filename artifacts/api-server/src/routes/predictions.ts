@@ -11,6 +11,7 @@ import {
 } from "@workspace/api-zod";
 import { db, predictionsTable } from "@workspace/db";
 import { matches, matchPolls, rewards } from "../lib/mockData";
+import { eq } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -34,7 +35,15 @@ router.get("/predictions/available", async (_req, res): Promise<void> => {
 });
 
 router.get("/predictions", async (req, res): Promise<void> => {
-  const dbPredictions = await db.select().from(predictionsTable);
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "يجب تسجيل الدخول لعرض التوقعات" });
+    return;
+  }
+
+  const dbPredictions = await db
+    .select()
+    .from(predictionsTable)
+    .where(eq(predictionsTable.userId, parseInt(req.user.id, 10)));
 
   const enriched = dbPredictions.map(p => {
     const match = matches.find(m => m.id === p.matchId) ?? matches[0];
@@ -56,6 +65,11 @@ router.get("/predictions", async (req, res): Promise<void> => {
 });
 
 router.post("/predictions", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "يجب تسجيل الدخول لإرسال توقع" });
+    return;
+  }
+
   const parsed = CreatePredictionBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -68,7 +82,10 @@ router.post("/predictions", async (req, res): Promise<void> => {
     return;
   }
 
+  const userId = parseInt(req.user.id, 10);
+
   const [inserted] = await db.insert(predictionsTable).values({
+    userId,
     matchId: parsed.data.matchId,
     homeScorePrediction: parsed.data.homeScorePrediction ?? null,
     awayScorePrediction: parsed.data.awayScorePrediction ?? null,
@@ -92,8 +109,16 @@ router.post("/predictions", async (req, res): Promise<void> => {
   }));
 });
 
-router.get("/predictions/history", async (_req, res): Promise<void> => {
-  const dbPredictions = await db.select().from(predictionsTable);
+router.get("/predictions/history", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "يجب تسجيل الدخول لعرض سجل التوقعات" });
+    return;
+  }
+
+  const dbPredictions = await db
+    .select()
+    .from(predictionsTable)
+    .where(eq(predictionsTable.userId, parseInt(req.user.id, 10)));
   const total = dbPredictions.length;
   const won = dbPredictions.filter(p => p.status === "won").length;
   const totalPoints = dbPredictions.reduce((sum, p) => sum + (p.pointsEarned ?? 0), 0);
