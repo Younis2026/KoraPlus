@@ -5,8 +5,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
-import { Settings, Trophy, Target, Flame, Medal, Shield, Share2 } from 'lucide-react';
+import { Settings, Trophy, Target, Flame, Medal, Shield, Share2, ShieldAlert, ChevronLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Link } from 'wouter';
 
 export default function ProfilePage() {
   const { data: profile, isLoading: loadingProfile } = useGetProfile();
@@ -127,6 +128,26 @@ export default function ProfilePage() {
           ))}
         </div>
       </section>
+
+      {/* Admin Panel Access */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <Link href="/admin">
+          <div className="group flex items-center gap-4 p-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 hover:border-emerald-500/40 transition-all cursor-pointer">
+            <div className="w-12 h-12 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0 group-hover:bg-emerald-500/25 transition-colors">
+              <ShieldAlert className="w-6 h-6 text-emerald-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm text-emerald-300">لوحة التحكم</p>
+              <p className="text-xs text-muted-foreground">إدارة المباريات والأخبار والتوقعات</p>
+            </div>
+            <ChevronLeft className="w-5 h-5 text-emerald-500/60 group-hover:text-emerald-400 transition-colors shrink-0" />
+          </div>
+        </Link>
+      </motion.div>
     </div>
   );
 }

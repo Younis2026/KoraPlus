@@ -5,9 +5,24 @@ import {
   ListNewsQueryParams,
   GetNewsArticleParams,
 } from "@workspace/api-zod";
-import { news } from "../lib/mockData";
+import { news as mockNews } from "../lib/mockData";
+import { getResultsBasedNews } from "../lib/footballApi";
 
 const router: IRouter = Router();
+
+/** Merge live-result news with mock news, deduplicated and sorted by date */
+async function getAllNews() {
+  try {
+    const liveNews = await getResultsBasedNews();
+    // Combine: live news first (most recent), then mock news
+    const combined = [...liveNews, ...mockNews];
+    // Sort by publishedAt descending
+    combined.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+    return combined;
+  } catch {
+    return mockNews;
+  }
+}
 
 router.get("/news", async (req, res): Promise<void> => {
   const parsed = ListNewsQueryParams.safeParse(req.query);
@@ -15,7 +30,9 @@ router.get("/news", async (req, res): Promise<void> => {
   const teamId = parsed.success ? parsed.data.teamId : undefined;
   const leagueId = parsed.success ? parsed.data.leagueId : undefined;
 
-  let filtered = [...news];
+  const allNews = await getAllNews();
+
+  let filtered = [...allNews];
   if (category && category !== "all") {
     filtered = filtered.filter(n => n.category === category);
   }
@@ -37,7 +54,26 @@ router.get("/news/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const article = news.find(n => n.id === params.data.id);
+  // Check live-result news first
+  if (params.data.id.startsWith("result_")) {
+    try {
+      const liveNews = await getResultsBasedNews();
+      const found = liveNews.find(n => n.id === params.data.id);
+      if (found) {
+        res.json(GetNewsArticleResponse.parse({
+          ...found,
+          content: `${found.summary}\n\nتفاصيل المباراة: ${found.title}\n\nهذا الخبر مُستخلَص تلقائياً من نتائج المباريات الحية. يمكنك متابعة المزيد من التفاصيل عبر قسم المباريات في التطبيق.`,
+          videoUrl: null,
+          tags: ['كرة القدم', 'نتائج', found.category],
+        }));
+        return;
+      }
+    } catch {
+      // fall through
+    }
+  }
+
+  const article = mockNews.find(n => n.id === params.data.id);
   if (!article) {
     res.status(404).json({ error: "لم يتم العثور على الخبر" });
     return;
