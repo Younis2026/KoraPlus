@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "Sports Predict - تطبيق التوقعات الرياضية"
+title = "SportZone"
 version = "1.0.0"
 id = "artifacts/sports-predict"
 router = "path"
