@@ -9,6 +9,7 @@ import { AuthProvider } from '@/components/auth-provider';
 import HomePage from '@/pages/home';
 import MatchesPage from '@/pages/matches';
 import MatchDetailPage from '@/pages/match-detail';
+import LeagueDetailPage from '@/pages/league-detail';
 import PredictionsPage from '@/pages/predictions';
 import NewsPage from '@/pages/news';
 import NewsArticlePage from '@/pages/news-article';
@@ -36,14 +37,14 @@ const queryClient = new QueryClient({
 function Router() {
   return (
     <Switch>
-      {/* Admin Routes — must be declared before main Layout route */}
+      {/* Admin Routes — declared before main Layout so they match first */}
       <Route path="/admin" component={() => <AdminLayout><AdminLoginPage /></AdminLayout>} />
       <Route path="/admin/dashboard" component={() => <AdminLayout><AdminDashboardPage /></AdminLayout>} />
       <Route path="/admin/matches" component={() => <AdminLayout><AdminMatchesPage /></AdminLayout>} />
       <Route path="/admin/news" component={() => <AdminLayout><AdminNewsPage /></AdminLayout>} />
       <Route path="/admin/predictions" component={() => <AdminLayout><AdminPredictionsPage /></AdminLayout>} />
       <Route path="/admin/users" component={() => <AdminLayout><AdminUsersPage /></AdminLayout>} />
-      
+
       {/* Main App Routes */}
       <Route>
         <Layout>
@@ -51,6 +52,7 @@ function Router() {
             <Route path="/" component={HomePage} />
             <Route path="/matches" component={MatchesPage} />
             <Route path="/matches/:id" component={MatchDetailPage} />
+            <Route path="/leagues/:id" component={LeagueDetailPage} />
             <Route path="/predictions" component={PredictionsPage} />
             <Route path="/news" component={NewsPage} />
             <Route path="/news/:id" component={NewsArticlePage} />

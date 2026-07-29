@@ -1,14 +1,44 @@
 import { Router, type IRouter } from "express";
 import { GetHomeSummaryResponse } from "@workspace/api-zod";
-import { news as mockNews, leagues } from "../lib/mockData";
+import { leagues } from "../lib/mockData";
 import { getMatchesMerged, getResultsBasedNews } from "../lib/footballApi";
 import { db, usersTable } from "@workspace/db";
 import { desc, eq } from "drizzle-orm";
 
 const router: IRouter = Router();
 
+/** Map a live-results news item to the full NewsArticle shape that Zod expects */
+function toNewsArticle(item: Awaited<ReturnType<typeof getResultsBasedNews>>[number]) {
+  return {
+    id: item.id,
+    title: item.title,
+    subtitle: "",
+    summary: item.summary,
+    author: "نتائج مباشرة",
+    content: item.summary,
+    category: item.category as
+      | "breaking"
+      | "transfers"
+      | "injuries"
+      | "press_conference"
+      | "analysis"
+      | "video_highlights",
+    imageUrl: item.imageUrl,
+    publishedAt: item.publishedAt,
+    teamId: item.teamId ?? null,
+    leagueId: item.leagueId ?? null,
+    isBreaking: item.isBreaking,
+    isFeatured: false,
+    readTimeMinutes: item.readTimeMinutes,
+    viewCount: 0,
+    tags: [],
+    videoUrl: null,
+    isBookmarked: false,
+  };
+}
+
 router.get("/home/summary", async (req, res): Promise<void> => {
-  // Fetch live matches, news, and leaderboard in parallel
+  // Fetch live matches, news, and leaderboard in parallel — never crash
   const [allMatchesResult, liveNewsResult, topUsersResult] =
     await Promise.allSettled([
       getMatchesMerged(),
@@ -33,11 +63,11 @@ router.get("/home/summary", async (req, res): Promise<void> => {
 
   const liveMatchCount = matches.filter((m) => m.status === "live").length;
 
-  // Breaking news: live results first, then mock breaking news
-  const breakingNews = [
-    ...resultNews.slice(0, 2),
-    ...mockNews.filter((n) => n.isBreaking).slice(0, 2),
-  ].slice(0, 3);
+  // Breaking news: live results only — properly shaped as NewsArticle
+  const breakingNews = resultNews
+    .filter((n) => n.isBreaking)
+    .slice(0, 3)
+    .map(toNewsArticle);
 
   const topLeagues = leagues.slice(0, 5);
 
@@ -60,13 +90,17 @@ router.get("/home/summary", async (req, res): Promise<void> => {
   let userRank = 0;
   let userPoints = 0;
   if (req.isAuthenticated()) {
-    const [user] = await db
-      .select()
-      .from(usersTable)
-      .where(eq(usersTable.id, parseInt(req.user.id, 10)));
-    if (user) {
-      userRank = user.globalRank ?? 9999;
-      userPoints = user.totalPoints;
+    try {
+      const [user] = await db
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.id, parseInt(req.user.id, 10)));
+      if (user) {
+        userRank = user.globalRank ?? 0;
+        userPoints = user.totalPoints ?? 0;
+      }
+    } catch {
+      // non-critical — keep defaults
     }
   }
 
@@ -81,7 +115,24 @@ router.get("/home/summary", async (req, res): Promise<void> => {
     topLeaderboard,
   };
 
-  res.json(GetHomeSummaryResponse.parse(summary));
+  try {
+    res.json(GetHomeSummaryResponse.parse(summary));
+  } catch (err) {
+    // Zod parse failed — return safe empty-state response so frontend never shows error
+    console.error("[home/summary] Zod parse error:", err);
+    res.json(
+      GetHomeSummaryResponse.parse({
+        breakingNews: [],
+        todayMatches: [],
+        liveMatchCount: 0,
+        topLeagues,
+        userRank,
+        userPoints,
+        upcomingPredictions: [],
+        topLeaderboard,
+      }),
+    );
+  }
 });
 
 export default router;

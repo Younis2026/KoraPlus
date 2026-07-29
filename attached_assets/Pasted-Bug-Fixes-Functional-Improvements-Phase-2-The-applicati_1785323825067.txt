@@ -1,0 +1,178 @@
+Bug Fixes & Functional Improvements (Phase 2)
+
+The application has been published.
+
+Keep the current UI exactly as it is.
+
+Do NOT redesign any page.
+
+Fix the following issues only.
+
+1. Home Page
+
+The Home page displays "Error loading data".
+
+Fix all backend/API/database errors causing this.
+
+Requirements:
+
+Load data successfully.
+Show loading skeleton while fetching.
+If there is no data, show a friendly empty-state message instead of an error.
+Log server errors for debugging.
+2. Matches Page
+Results Tab
+
+Currently displays fake/demo results.
+
+Remove all placeholder data.
+
+Display only:
+
+Real results from PostgreSQL.
+Or results from the connected Sports API.
+
+If there are no finished matches:
+
+Display:
+
+"No finished matches available."
+
+Leagues Tab
+
+Currently shows matches instead of leagues.
+
+Replace this with a list of leagues only.
+
+Example:
+
+Saudi Pro League
+Premier League
+La Liga
+Serie A
+Bundesliga
+Ligue 1
+UEFA Champions League
+AFC Champions League
+
+Each league should be clickable.
+
+For now, clicking a league should open a placeholder league details page.
+
+Detailed league statistics will be implemented later.
+
+3. News Page
+
+The News page has not been created.
+
+Create a complete News module.
+
+Include:
+
+Latest News
+Featured News
+Categories
+Search
+Article Details
+Bookmark
+Share
+Related News
+
+Each article includes:
+
+Title
+Cover Image
+Summary
+Content
+Author
+Publish Date
+Views
+
+Connect everything to PostgreSQL.
+
+Add the News page to the bottom navigation.
+
+4. My Account Page
+Settings Icon
+
+Currently does nothing.
+
+Open a Settings page.
+
+Include:
+
+Edit Profile
+Change Password
+Notification Settings
+Language
+Theme
+Logout
+Share Icon
+
+Currently does nothing.
+
+Implement native sharing.
+
+If sharing is unavailable:
+
+Copy the profile link to clipboard.
+
+Display success confirmation.
+
+Profile Statistics
+
+Remove the meaningless symbols displayed under the user's name.
+
+Replace them with real statistics.
+
+Example:
+
+Points
+Rank
+Correct Predictions
+
+If there is no data yet:
+
+Display:
+
+0
+
+instead of icons or placeholders.
+
+5. Authentication
+
+Logging out works.
+
+However, logging in with another account is impossible.
+
+Fix the authentication flow.
+
+Requirements:
+
+Logout clears JWT.
+Clear session.
+Clear cached user.
+Redirect to Login.
+Allow another user to sign in immediately.
+Support multiple consecutive logins without refreshing the application.
+6. Final QA
+
+Before deployment verify:
+
+✅ Home page loads correctly.
+
+✅ Results use real data.
+
+✅ Leagues page lists leagues only.
+
+✅ News page exists.
+
+✅ Settings works.
+
+✅ Share works.
+
+✅ Profile statistics display correctly.
+
+✅ Logout/Login works correctly.
+
+✅ No placeholder data remains.

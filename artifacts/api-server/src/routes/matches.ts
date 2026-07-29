@@ -7,7 +7,7 @@ import {
   GetMatchParams,
   GetMatchPollParams,
 } from "@workspace/api-zod";
-import { matches as mockMatches, getMatchDetail, matchPolls } from "../lib/mockData";
+import { getMatchDetail, matchPolls } from "../lib/mockData";
 import { getMatchesMerged } from "../lib/footballApi";
 
 const router: IRouter = Router();
@@ -16,14 +16,13 @@ router.get("/matches", async (req, res): Promise<void> => {
   const query = ListMatchesQueryParams.safeParse(req.query);
   const filter = query.success ? query.data.filter : "today";
 
-  let allMatches: typeof mockMatches;
+  let allMatches: Awaited<ReturnType<typeof getMatchesMerged>> = [];
 
   try {
-    const live = await getMatchesMerged();
-    // Cast live matches to match the mock type shape (compatible fields)
-    allMatches = live as unknown as typeof mockMatches;
+    allMatches = await getMatchesMerged();
   } catch {
-    allMatches = [...mockMatches];
+    // If live API is unavailable, return empty array — never serve fake data
+    allMatches = [];
   }
 
   const now = new Date();
@@ -43,7 +42,6 @@ router.get("/matches", async (req, res): Promise<void> => {
       const d = new Date(m.scheduledAt);
       return m.status === "live" || (m.status === "upcoming" && d >= todayStart && d <= todayEnd);
     });
-    // If no "today" results, show all upcoming
     if (filtered.length === 0) {
       filtered = allMatches.filter(m => m.status === "live" || m.status === "upcoming");
     }
@@ -56,11 +54,14 @@ router.get("/matches", async (req, res): Promise<void> => {
       filtered = allMatches.filter(m => m.status === "upcoming").slice(0, 6);
     }
   } else if (filter === "past") {
+    // Only real finished/postponed matches — no mock fallback
     filtered = allMatches.filter(m => m.status === "finished" || m.status === "postponed");
   } else if (filter === "by_league") {
     const leagueId = query.success ? query.data.leagueId : undefined;
     if (leagueId) {
       filtered = allMatches.filter(m => m.league.id === leagueId);
+    } else {
+      filtered = [];
     }
   }
 
@@ -75,13 +76,12 @@ router.get("/matches/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  // For live API matches (prefixed with sdb_), build a detail from what we have
+  // For live API matches (prefixed with sdb_), build a detail from the live data
   if (params.data.id.startsWith("sdb_")) {
     try {
       const allMatches = await getMatchesMerged();
       const match = allMatches.find(m => m.id === params.data.id);
       if (match) {
-        // Build a detail object with empty lineup (real lineup requires premium API)
         const detail = {
           ...match,
           homeLineup: [],
@@ -103,7 +103,7 @@ router.get("/matches/:id", async (req, res): Promise<void> => {
         return;
       }
     } catch {
-      // fall through to mock
+      // fall through
     }
   }
 

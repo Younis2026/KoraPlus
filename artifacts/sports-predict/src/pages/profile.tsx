@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useGetProfile, useGetProfileStats, useGetAchievements } from '@workspace/api-client-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,13 +6,28 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { Settings, Trophy, Target, Flame, Medal, Shield, Share2, ShieldAlert, ChevronLeft, LogIn, LogOut, User } from 'lucide-react';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import {
+  Settings, Trophy, Target, Flame, Medal, Shield, Share2,
+  ShieldAlert, ChevronLeft, LogIn, LogOut, User, Bell,
+  Globe, Moon, Pencil, Copy, Check,
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'wouter';
 import { useAppAuth } from '@/components/auth-provider';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {
   const { isAuthenticated, isLoading: authLoading, login, logout, user: authUser } = useAppAuth();
+  const { toast } = useToast();
+
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const queryOpts = { enabled: isAuthenticated } as any;
@@ -20,12 +35,23 @@ export default function ProfilePage() {
   const { data: stats, isLoading: loadingStats } = useGetProfileStats({ query: queryOpts });
   const { data: achievements, isLoading: loadingAchievements } = useGetAchievements({ query: queryOpts });
 
-  // Show loading while checking auth
-  if (authLoading) {
-    return <ProfileSkeleton />;
+  function handleShare() {
+    const profileUrl = window.location.origin + '/profile';
+    const shareText = `توقعاتي الرياضية على توقع بلس — ${profile?.name ?? ''}`;
+    if (navigator.share) {
+      navigator.share({ title: 'توقع بلس', text: shareText, url: profileUrl })
+        .catch(() => null);
+    } else {
+      navigator.clipboard.writeText(profileUrl).then(() => {
+        setCopied(true);
+        toast({ title: 'تم نسخ رابط الملف الشخصي ✓' });
+        setTimeout(() => setCopied(false), 2000);
+      });
+    }
   }
 
-  // Show login prompt if not authenticated
+  if (authLoading) return <ProfileSkeleton />;
+
   if (!isAuthenticated) {
     return (
       <div className="max-w-md mx-auto p-6 flex flex-col items-center justify-center min-h-[70vh] text-center gap-6">
@@ -44,9 +70,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (loadingProfile || loadingStats || loadingAchievements) {
-    return <ProfileSkeleton />;
-  }
+  if (loadingProfile || loadingStats || loadingAchievements) return <ProfileSkeleton />;
 
   if (!profile || !stats) {
     return (
@@ -59,29 +83,37 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-md md:max-w-3xl lg:max-w-5xl mx-auto p-4 space-y-6 animate-in fade-in duration-500 pb-20">
-      
+
       {/* Header Profile Card */}
       <Card className="overflow-hidden border-primary/20 relative">
         <div className="absolute top-0 right-0 p-4 z-10 flex gap-2">
-          <button className="w-8 h-8 rounded-full bg-background/50 backdrop-blur border flex items-center justify-center text-foreground hover:bg-background/80 transition-colors">
-            <Share2 className="w-4 h-4" />
+          <button
+            onClick={handleShare}
+            title="مشاركة الملف الشخصي"
+            className="w-8 h-8 rounded-full bg-background/50 backdrop-blur border flex items-center justify-center text-foreground hover:bg-background/80 transition-colors"
+          >
+            {copied ? <Check className="w-4 h-4 text-primary" /> : <Share2 className="w-4 h-4" />}
           </button>
           <button
             onClick={logout}
-            className="w-8 h-8 rounded-full bg-background/50 backdrop-blur border flex items-center justify-center text-foreground hover:bg-background/80 transition-colors"
             title="تسجيل الخروج"
+            className="w-8 h-8 rounded-full bg-background/50 backdrop-blur border flex items-center justify-center text-foreground hover:bg-background/80 transition-colors"
           >
             <LogOut className="w-4 h-4" />
           </button>
-          <button className="w-8 h-8 rounded-full bg-background/50 backdrop-blur border flex items-center justify-center text-foreground hover:bg-background/80 transition-colors">
+          <button
+            onClick={() => setSettingsOpen(true)}
+            title="الإعدادات"
+            className="w-8 h-8 rounded-full bg-background/50 backdrop-blur border flex items-center justify-center text-foreground hover:bg-background/80 transition-colors"
+          >
             <Settings className="w-4 h-4" />
           </button>
         </div>
-        
+
         <div className="h-32 bg-gradient-to-r from-primary/80 to-secondary/80 relative">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xNSIvPjwvc3ZnPg==')] mix-blend-overlay"></div>
+          <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '18px 18px' }} />
         </div>
-        
+
         <CardContent className="px-6 pb-6 pt-0 relative">
           <div className="flex flex-col md:flex-row items-center md:items-end gap-4 -mt-12 mb-4">
             <div className="relative">
@@ -95,22 +127,26 @@ export default function ProfilePage() {
                 مستوى {profile.level}
               </div>
             </div>
-            
+
             <div className="text-center md:text-right flex-1 pt-2 md:pt-0">
               <h1 className="text-2xl font-black">{profile.name}</h1>
-              <p className="text-muted-foreground text-sm">@{profile.username} • {profile.country}</p>
+              <p className="text-muted-foreground text-sm">@{profile.username}</p>
             </div>
-            
-            <div className="flex gap-4 w-full md:w-auto justify-center mt-4 md:mt-0">
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground mb-1">الترتيب العالمي</p>
-                <p className="font-black text-xl tabular-nums">#{profile.globalRank}</p>
-              </div>
-              <div className="w-px bg-border my-2"></div>
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground mb-1">إجمالي النقاط</p>
-                <p className="font-black text-xl tabular-nums text-secondary">{profile.totalPoints}</p>
-              </div>
+          </div>
+
+          {/* Key stats under the name — always show numbers, never symbols */}
+          <div className="grid grid-cols-3 gap-3 mt-2">
+            <div className="text-center bg-muted/40 rounded-xl p-3">
+              <p className="font-black text-2xl tabular-nums text-secondary">{profile.totalPoints ?? 0}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">النقاط</p>
+            </div>
+            <div className="text-center bg-muted/40 rounded-xl p-3">
+              <p className="font-black text-2xl tabular-nums">#{profile.globalRank ?? 0}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">الترتيب</p>
+            </div>
+            <div className="text-center bg-muted/40 rounded-xl p-3">
+              <p className="font-black text-2xl tabular-nums text-primary">{stats.wonPredictions ?? 0}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">توقع صحيح</p>
             </div>
           </div>
         </CardContent>
@@ -118,13 +154,13 @@ export default function ProfilePage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard title="إجمالي التوقعات" value={stats.totalPredictions} icon={<Target className="text-blue-500" />} />
-        <StatCard title="توقعات صحيحة" value={stats.wonPredictions} icon={<Medal className="text-primary" />} />
-        <StatCard title="نسبة الدقة" value={`${stats.accuracy}%`} icon={<Shield className="text-emerald-500" />} />
-        <StatCard title="أفضل سلسلة" value={`${stats.bestStreak} متتالية`} icon={<Flame className="text-red-500" />} />
+        <StatCard title="إجمالي التوقعات" value={stats.totalPredictions ?? 0} icon={<Target className="text-blue-500" />} />
+        <StatCard title="نسبة الدقة" value={`${stats.accuracy ?? 0}%`} icon={<Shield className="text-emerald-500" />} />
+        <StatCard title="أفضل سلسلة" value={`${stats.bestStreak ?? 0} متتالية`} icon={<Flame className="text-red-500" />} />
+        <StatCard title="الشارات" value={profile.badgeCount ?? 0} icon={<Medal className="text-secondary" />} />
       </div>
 
-      {/* Achievements Section */}
+      {/* Achievements */}
       {achievements && achievements.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-4">
@@ -132,22 +168,15 @@ export default function ProfilePage() {
               <Trophy className="w-5 h-5 text-secondary" />
               الإنجازات
             </h2>
-            <Badge variant="outline">{profile.badgeCount} مفتوح</Badge>
+            <Badge variant="outline">{profile.badgeCount ?? 0} مفتوح</Badge>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {achievements.map((ach, i) => (
-              <motion.div
-                key={ach.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-              >
+              <motion.div key={ach.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                 <Card className={`overflow-hidden h-full ${ach.isUnlocked ? 'bg-card border-primary/20' : 'bg-muted/30 opacity-70 border-dashed'}`}>
                   <CardContent className="p-4 flex gap-4 items-center">
-                    <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${
-                      ach.isUnlocked ? 'bg-gradient-to-br from-secondary to-amber-600 shadow-lg shadow-secondary/20 text-white' : 'bg-muted text-muted-foreground'
-                    }`}>
+                    <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${ach.isUnlocked ? 'bg-gradient-to-br from-secondary to-amber-600 shadow-lg shadow-secondary/20 text-white' : 'bg-muted text-muted-foreground'}`}>
                       {ach.rarity === 'legendary' ? <Trophy className="w-6 h-6" /> : <Medal className="w-6 h-6" />}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -174,26 +203,72 @@ export default function ProfilePage() {
         </section>
       )}
 
-      {/* Admin Panel Access */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
-        <Link href="/admin">
-          <div className="group flex items-center gap-4 p-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 hover:border-emerald-500/40 transition-all cursor-pointer">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0 group-hover:bg-emerald-500/25 transition-colors">
-              <ShieldAlert className="w-6 h-6 text-emerald-400" />
+      {/* Admin Panel Access — only for admins */}
+      {authUser?.role === 'admin' && (
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <Link href="/admin">
+            <div className="group flex items-center gap-4 p-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 hover:border-emerald-500/40 transition-all cursor-pointer">
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
+                <ShieldAlert className="w-6 h-6 text-emerald-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-sm text-emerald-300">لوحة التحكم</p>
+                <p className="text-xs text-muted-foreground">إدارة المباريات والأخبار والتوقعات</p>
+              </div>
+              <ChevronLeft className="w-5 h-5 text-emerald-500/60 group-hover:text-emerald-400 transition-colors shrink-0" />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-sm text-emerald-300">لوحة التحكم</p>
-              <p className="text-xs text-muted-foreground">إدارة المباريات والأخبار والتوقعات</p>
+          </Link>
+        </motion.div>
+      )}
+
+      {/* Settings Sheet */}
+      <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <SheetContent side="bottom" className="rounded-t-3xl" dir="rtl">
+          <SheetHeader className="text-right pb-4">
+            <SheetTitle className="text-xl font-black">الإعدادات</SheetTitle>
+          </SheetHeader>
+
+          <div className="space-y-2 pb-6">
+            <SettingsItem icon={<Pencil className="w-5 h-5 text-primary" />} label="تعديل الملف الشخصي" onClick={() => { setSettingsOpen(false); window.location.href = '/profile/setup'; }} />
+            <SettingsItem icon={<Bell className="w-5 h-5 text-amber-400" />} label="إشعارات" badge="قريباً" onClick={() => {}} />
+            <SettingsItem icon={<Globe className="w-5 h-5 text-blue-400" />} label="اللغة" badge="العربية" onClick={() => {}} />
+            <SettingsItem icon={<Moon className="w-5 h-5 text-purple-400" />} label="المظهر" badge="داكن" onClick={() => {}} />
+            <div className="pt-2">
+              <button
+                onClick={() => { setSettingsOpen(false); logout(); }}
+                className="w-full flex items-center gap-4 p-4 rounded-xl bg-destructive/10 hover:bg-destructive/20 transition-colors text-destructive"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="font-bold">تسجيل الخروج</span>
+              </button>
             </div>
-            <ChevronLeft className="w-5 h-5 text-emerald-500/60 group-hover:text-emerald-400 transition-colors shrink-0" />
           </div>
-        </Link>
-      </motion.div>
+        </SheetContent>
+      </Sheet>
     </div>
+  );
+}
+
+function SettingsItem({
+  icon, label, badge, onClick
+}: {
+  icon: React.ReactNode;
+  label: string;
+  badge?: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-muted/60 transition-colors text-right"
+    >
+      <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
+        {icon}
+      </div>
+      <span className="flex-1 font-medium">{label}</span>
+      {badge && <Badge variant="secondary" className="text-xs">{badge}</Badge>}
+      <ChevronLeft className="w-4 h-4 text-muted-foreground shrink-0" />
+    </button>
   );
 }
 
@@ -205,7 +280,7 @@ function StatCard({ title, value, icon }: { title: string; value: string | numbe
           {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: 'w-4 h-4' })}
           <span className="truncate">{title}</span>
         </div>
-        <p className="font-black text-2xl tabular-nums">{value}</p>
+        <p className="font-black text-2xl tabular-nums">{value ?? 0}</p>
       </CardContent>
     </Card>
   );
@@ -214,12 +289,8 @@ function StatCard({ title, value, icon }: { title: string; value: string | numbe
 function ProfileSkeleton() {
   return (
     <div className="max-w-md md:max-w-3xl lg:max-w-5xl mx-auto p-4 space-y-6">
-      <Skeleton className="h-48 w-full rounded-2xl" />
+      <Skeleton className="h-52 w-full rounded-2xl" />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
-      </div>
-      <Skeleton className="h-8 w-32 mb-4 mt-8" />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
       </div>
     </div>
