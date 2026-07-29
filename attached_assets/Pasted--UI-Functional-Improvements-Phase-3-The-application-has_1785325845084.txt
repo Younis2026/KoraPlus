@@ -1,0 +1,154 @@
+# UI & Functional Improvements (Phase 3)
+
+The application has been published.
+
+Keep the existing UI and color theme.
+
+Do NOT redesign the application.
+
+Implement the following improvements only.
+
+---
+
+## 1. Predictions Page
+
+Improve the match information layout.
+
+### Match Date & Time
+
+Display the match date and kickoff time on **one single line**.
+
+Example:
+
+📅 29 Jul 2026 | 🕗 21:00
+
+Do not wrap the date and time onto separate lines.
+
+### Countdown
+
+Display the remaining time until kickoff directly below the date.
+
+Requirements:
+
+- Larger font
+- Bold text
+- High contrast color
+- Easy to read
+
+Example:
+
+⏳ Starts in 02h 15m
+
+When less than 5 minutes remain:
+
+Display in red.
+
+When prediction closes:
+
+Display:
+
+**Prediction Closed**
+
+---
+
+## 2. My Account Page
+
+Under the user's display name there is currently an icon.
+
+Remove that icon.
+
+Replace it with the user's unique numeric ID.
+
+Example:
+
+ID: 1025
+
+The ID must come from the Users table in PostgreSQL.
+
+---
+
+## 3. Rankings Page
+
+Do not display demo rankings.
+
+Display the real ranking of registered users.
+
+Sort users by:
+
+1. Total Points
+2. Correct Predictions
+3. Prediction Accuracy
+
+Each row should display:
+
+- Rank
+- Avatar
+- Display Name
+- User ID
+- Points
+- Correct Predictions
+
+Update automatically after every finished match.
+
+---
+
+## 4. Login Page
+
+The Login screen currently has a different design from the rest of the application.
+
+Redesign ONLY the Login page so it matches the application's existing theme.
+
+Requirements:
+
+- Same colors
+- Same typography
+- Same card style
+- Same buttons
+- Same spacing
+- Same dark mode
+- Same modern appearance
+
+It should feel like part of the same application.
+
+---
+
+## 5. Login Form
+
+Allow users to freely edit:
+
+- Username
+- Password
+
+Requirements:
+
+- Inputs must always be editable.
+- Autofill should work normally.
+- Paste should be enabled.
+- Show/Hide Password button.
+- Proper validation messages.
+- Login button enabled when fields are valid.
+
+---
+
+## 6. Final QA
+
+Verify that:
+
+- Date and time appear on one line.
+- Countdown is clearly visible.
+- Countdown turns red during the last 5 minutes.
+- User ID appears below the display name.
+- Rankings display real users only.
+- Login page matches the application theme.
+- Username and password fields are fully editable.
+- No UI regressions are introduced.
+
+---
+
+## Important
+
+- Do NOT change the navigation.
+- Do NOT redesign the rest of the application.
+- Keep the current responsive layout.
+- Do not use mock or placeholder data.
+- Use PostgreSQL as the source of truth for user information and rankings.

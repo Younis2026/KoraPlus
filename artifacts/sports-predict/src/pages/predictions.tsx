@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   useListAvailablePredictions,
   useListMyPredictions,
@@ -39,6 +39,58 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { formatDate } from '@/lib/utils';
+
+// ─── Countdown helpers ─────────────────────────────────────────────────────────
+
+function useCountdown(targetIso: string) {
+  const [ms, setMs] = useState(() => Math.max(0, new Date(targetIso).getTime() - Date.now()));
+  useEffect(() => {
+    const id = setInterval(() => {
+      setMs(Math.max(0, new Date(targetIso).getTime() - Date.now()));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [targetIso]);
+  return ms;
+}
+
+/** Renders "📅 29 يوليو 2026 | 🕗 09:00 م" on a single line */
+function MatchDateTime({ scheduledAt }: { scheduledAt: string }) {
+  const d = new Date(scheduledAt);
+  const dateStr = new Intl.DateTimeFormat('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+  const timeStr = new Intl.DateTimeFormat('ar-EG', { hour: 'numeric', minute: '2-digit', hour12: true }).format(d);
+  return (
+    <span className="text-xs text-muted-foreground whitespace-nowrap">
+      📅 {dateStr} &nbsp;|&nbsp; 🕗 {timeStr}
+    </span>
+  );
+}
+
+/** Countdown to closesAt (= scheduledAt − 5 min). Red below 5 min, "مغلق" when done. */
+function CountdownDisplay({ closesAt }: { closesAt: string }) {
+  const ms = useCountdown(closesAt);
+
+  if (ms <= 0) {
+    return (
+      <span className="text-xs font-bold text-destructive flex items-center gap-1">
+        🔒 التوقعات مغلقة
+      </span>
+    );
+  }
+
+  const urgent = ms < 5 * 60 * 1000;
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  const display = h > 0
+    ? `${String(h).padStart(2, '0')}س ${String(m).padStart(2, '0')}د`
+    : `${String(m).padStart(2, '0')}د ${String(s).padStart(2, '0')}ث`;
+
+  return (
+    <span className={`text-sm font-bold flex items-center gap-1 ${urgent ? 'text-destructive' : 'text-foreground'}`}>
+      ⏳ يبدأ خلال {display}
+    </span>
+  );
+}
 import { Link } from 'wouter';
 import {
   Gift,
@@ -371,12 +423,10 @@ function AvailablePredictions() {
                     <span className="font-bold text-sm text-center">{pm.match.homeTeam.name}</span>
                   </div>
                   <div className="flex-1 flex flex-col items-center gap-2">
-                    <div className="text-xs text-muted-foreground font-bold bg-background px-3 py-1 rounded-full border shadow-sm">
-                      {formatDate(pm.match.scheduledAt)}
+                    <div className="bg-background px-3 py-1 rounded-full border shadow-sm">
+                      <MatchDateTime scheduledAt={pm.match.scheduledAt} />
                     </div>
-                    <span className="text-xs text-destructive font-bold">
-                      يغلق: {formatDate(pm.closesAt)}
-                    </span>
+                    <CountdownDisplay closesAt={pm.closesAt} />
                   </div>
                   <div className="flex flex-col items-center gap-2 w-[40%]">
                     <TeamLogo name={pm.match.awayTeam.name} className="w-14 h-14 shadow-md" />
@@ -476,9 +526,7 @@ function MyPredictions() {
               }>
                 <CardContent className="p-4">
                   <div className="flex justify-between items-center border-b border-border/50 pb-3 mb-3">
-                    <span className="text-xs font-bold text-muted-foreground">
-                      {formatDate(p.match.scheduledAt)}
-                    </span>
+                    <MatchDateTime scheduledAt={p.match.scheduledAt} />
                     <div className="flex items-center gap-2">
                       {!canEdit && p.status === 'pending' && (
                         <span className="flex items-center gap-1 text-xs text-muted-foreground">

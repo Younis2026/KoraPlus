@@ -54,18 +54,38 @@ export default function ProfilePage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="max-w-md mx-auto p-6 flex flex-col items-center justify-center min-h-[70vh] text-center gap-6">
-        <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center">
-          <User className="w-12 h-12 text-muted-foreground" />
-        </div>
-        <div className="space-y-2">
-          <h1 className="text-2xl font-black">مرحباً بك في توقع بلس!</h1>
-          <p className="text-muted-foreground">سجّل دخولك لمتابعة توقعاتك، مراكزك في الترتيب، وإنجازاتك.</p>
-        </div>
-        <Button size="lg" onClick={login} className="gap-2 w-full max-w-xs">
-          <LogIn className="w-5 h-5" />
-          تسجيل الدخول
-        </Button>
+      <div className="min-h-[80vh] flex items-center justify-center p-4">
+        <Card className="w-full max-w-sm border-primary/20 overflow-hidden">
+          {/* Branded header strip */}
+          <div className="h-2 bg-gradient-to-r from-primary to-secondary" />
+
+          <CardContent className="p-8 flex flex-col items-center gap-6 text-center">
+            {/* App icon */}
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/20 flex items-center justify-center shadow-lg">
+              <Trophy className="w-10 h-10 text-primary" />
+            </div>
+
+            <div className="space-y-1">
+              <h1 className="text-2xl font-black">توقع بلس</h1>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                سجّل دخولك لمتابعة توقعاتك ومراكزك في الترتيب وإنجازاتك.
+              </p>
+            </div>
+
+            <Button
+              size="lg"
+              onClick={login}
+              className="w-full gap-2 font-bold text-base h-12 rounded-xl"
+            >
+              <LogIn className="w-5 h-5" />
+              تسجيل الدخول
+            </Button>
+
+            <p className="text-xs text-muted-foreground/60">
+              يستخدم التطبيق تسجيل الدخول الآمن عبر Replit
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -130,7 +150,7 @@ export default function ProfilePage() {
 
             <div className="text-center md:text-right flex-1 pt-2 md:pt-0">
               <h1 className="text-2xl font-black">{profile.name}</h1>
-              <p className="text-muted-foreground text-sm">@{profile.username}</p>
+              <p className="text-muted-foreground text-sm font-mono">ID: {profile.id}</p>
             </div>
           </div>
 

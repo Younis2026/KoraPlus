@@ -58,6 +58,7 @@ function RankBadge({ rank }: { rank: number }) {
 }
 
 function LeaderboardRow({ entry, isMe }: { entry: LeaderboardEntry; isMe?: boolean }) {
+  const correctPredictions = Math.round(entry.predictions * entry.accuracy / 100);
   return (
     <motion.div
       initial={{ opacity: 0, x: -10 }}
@@ -73,7 +74,8 @@ function LeaderboardRow({ entry, isMe }: { entry: LeaderboardEntry; isMe?: boole
         <p className={`font-bold text-sm truncate ${isMe ? 'text-primary' : ''}`}>
           {isMe ? `${entry.user.name} (أنت)` : entry.user.name}
         </p>
-        <p className="text-xs text-muted-foreground">{entry.predictions} توقع • {entry.accuracy}% دقة</p>
+        <p className="text-xs text-muted-foreground font-mono">ID: {entry.user.id}</p>
+        <p className="text-xs text-muted-foreground">{correctPredictions} صحيح • {entry.accuracy}% دقة</p>
       </div>
       <div className="text-right shrink-0">
         <p className="font-black text-secondary tabular-nums">{entry.points.toLocaleString('ar-SA')}</p>

@@ -10,7 +10,7 @@ import { eq, inArray, desc } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-/** Fetch all real users ordered by total_points and shape them into leaderboard entries */
+/** Fetch all real users ordered by totalPoints → correctPredictions → accuracy, shape into leaderboard entries */
 async function getRealLeaderboardEntries(limit = 100) {
   const users = await db
     .select()
@@ -18,7 +18,16 @@ async function getRealLeaderboardEntries(limit = 100) {
     .orderBy(desc(usersTable.totalPoints))
     .limit(limit);
 
-  return users.map((u, i) => ({
+  // Secondary: sort ties by correct predictions (computed), then accuracy
+  const sorted = [...users].sort((a, b) => {
+    if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+    const aCorrect = Math.round(a.totalPredictions * a.accuracy / 100);
+    const bCorrect = Math.round(b.totalPredictions * b.accuracy / 100);
+    if (bCorrect !== aCorrect) return bCorrect - aCorrect;
+    return b.accuracy - a.accuracy;
+  });
+
+  return sorted.map((u, i) => ({
     rank: i + 1,
     user: {
       id: String(u.id),
