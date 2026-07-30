@@ -1,17 +1,7 @@
-import type { AuthUser } from '@workspace/api-zod';
-import { db, usersTable } from '@workspace/db';
-import { eq } from 'drizzle-orm';
-import { type NextFunction, type Request, type Response } from 'express';
-import * as oidc from 'openid-client';
-
-import {
-  clearSession,
-  getOidcConfig,
-  getSession,
-  getSessionId,
-  updateSession,
-  type SessionData,
-} from '../lib/auth';
+import type { AuthUser } from "@workspace/api-zod";
+import { db, usersTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
+import type { NextFunction, Request, Response } from "express";
 
 declare global {
   namespace Express {
@@ -19,84 +9,134 @@ declare global {
 
     interface Request {
       isAuthenticated(): this is AuthedRequest;
-
       user?: User | undefined;
-    }
-
-    export interface AuthedRequest {
-      user: User;
     }
   }
 }
 
-async function refreshIfExpired(
-  sid: string,
-  session: SessionData,
-): Promise<SessionData | null> {
-  const now = Math.floor(Date.now() / 1000);
-  if (!session.expires_at || now <= session.expires_at) return session;
+export interface AuthedRequest extends Request {
+  user: Express.User;
+}
 
-  if (!session.refresh_token) return null;
+type SupabaseUser = {
+  id: string;
+  email?: string;
+  user_metadata?: {
+    full_name?: string;
+    name?: string;
+    avatar_url?: string;
+    picture?: string;
+  };
+};
 
-  try {
-    const config = await getOidcConfig();
-    const tokens = await oidc.refreshTokenGrant(config, session.refresh_token);
-    session.access_token = tokens.access_token;
-    session.refresh_token = tokens.refresh_token ?? session.refresh_token;
-    session.expires_at = tokens.expiresIn()
-      ? now + tokens.expiresIn()!
-      : session.expires_at;
-    await updateSession(sid, session);
-    return session;
-  } catch {
-    return null;
-  }
+function getBearerToken(req: Request) {
+  const value = req.headers.authorization;
+  if (!value?.startsWith("Bearer ")) return null;
+  return value.slice("Bearer ".length);
+}
+
+async function getSupabaseUser(accessToken: string) {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY;
+
+  if (!url || !key) return null;
+
+  const response = await fetch(`${url}/auth/v1/user`, {
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) return null;
+  return response.json() as Promise<SupabaseUser>;
 }
 
 export async function authMiddleware(
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction,
 ) {
-  req.isAuthenticated = function (this: Request) {
-    return this.user != null;
-  } as Request['isAuthenticated'];
+  req.isAuthenticated = function (): this is AuthedRequest {
+    return this.user !== undefined;
+  };
 
-  const sid = getSessionId(req);
-  if (!sid) {
+  const accessToken = getBearerToken(req);
+  if (!accessToken) {
     next();
     return;
   }
 
-  const session = await getSession(sid);
-  if (!session?.user?.id) {
-    await clearSession(res, sid);
-    next();
-    return;
-  }
-
-  const refreshed = await refreshIfExpired(sid, session);
-  if (!refreshed) {
-    await clearSession(res, sid);
-    next();
-    return;
-  }
-
-  // Fetch fresh role + displayName + isProfileComplete from DB
   try {
-    const [dbUser] = await db
+    const supabaseUser = await getSupabaseUser(accessToken);
+    if (!supabaseUser) {
+      next();
+      return;
+    }
+
+    const email = supabaseUser.email?.toLowerCase() ?? null;
+    const metadata = supabaseUser.user_metadata ?? {};
+    const fullName = metadata.full_name ?? metadata.name ?? "";
+    const [firstName = "", ...lastNameParts] = fullName.trim().split(/\s+/);
+    const lastName = lastNameParts.join(" ");
+    const avatar = metadata.avatar_url ?? metadata.picture ?? "";
+
+    const [existingUser] = await db
       .select()
       .from(usersTable)
-      .where(eq(usersTable.id, parseInt(refreshed.user.id, 10)));
+      .where(eq(usersTable.replitId, supabaseUser.id));
+
+    const isInitialAdmin =
+      email !== null &&
+      email === (process.env.ADMIN_EMAIL ?? "").toLowerCase();
+
+    const role = isInitialAdmin
+      ? "admin"
+      : (existingUser?.role ?? "user");
+
+    const dbUser = existingUser
+      ? (
+          await db
+            .update(usersTable)
+            .set({
+              email,
+              firstName: firstName || null,
+              lastName: lastName || null,
+              name: fullName || existingUser.name,
+              avatar: avatar || existingUser.avatar,
+              role,
+            })
+            .where(eq(usersTable.id, existingUser.id))
+            .returning()
+        )[0]
+      : (
+          await db
+            .insert(usersTable)
+            .values({
+              replitId: supabaseUser.id,
+              email,
+              firstName: firstName || null,
+              lastName: lastName || null,
+              name: fullName || "مستخدم كورة بول",
+              username: `user_${supabaseUser.id.slice(0, 8)}`,
+              avatar,
+              role,
+            })
+            .returning()
+        )[0];
 
     req.user = {
-      ...refreshed.user,
-      role: (dbUser?.role ?? 'user') as 'user' | 'admin',
-      displayName: dbUser?.name ?? null,
-      isProfileComplete: dbUser?.isProfileComplete ?? false,
-    };
-  } catch {
-    req.user = refreshed.user;
+      id: String(dbUser.id),
+      email: dbUser.email ?? null,
+      firstName: dbUser.firstName ?? null,
+      lastName: dbUser.lastName ?? null,
+      profileImageUrl: dbUser.avatar ?? null,
+      role: (dbUser.role ?? "user") as "user" | "admin",
+      displayName: dbUser.name ?? null,
+      isProfileComplete: dbUser.isProfileComplete ?? false,
+    } as Express.User;
+  } catch (error) {
+    console.error("Supabase authentication error", error);
   }
 
   next();
